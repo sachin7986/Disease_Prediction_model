@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict AI — Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --blue:#0062E6; --blue-pale:#EBF3FF; --green:#12B76A; --green-pale:#E6FBF2;
+  --red:#EF4444; --text:#0D1B2A; --text-muted:#6B7A8D;
+  --border:#E2E8F0; --white:#FFFFFF; --surface:#F7F9FC; --sidebar-w:250px;
+}
+html,body { height:100%; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); }
+.layout { display:flex; height:100vh; overflow:hidden; }
+.sidebar { width:var(--sidebar-w); background:var(--white); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; flex-shrink:0; }
+.logo { display:flex; align-items:center; gap:10px; padding:0 8px 24px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.logo-icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#0062E6,#3D8EFF); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.logo strong { font-size:15px; font-weight:700; } .logo span { display:block; font-size:11px; color:var(--text-muted); }
+nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--text-muted); font-size:13.5px; font-weight:500; margin-bottom:2px; transition:all .18s; }
+nav a:hover { background:var(--surface); color:var(--text); } nav a.active { background:var(--blue-pale); color:var(--blue); }
+.sidebar-footer { margin-top:auto; border-top:1px solid var(--border); padding-top:16px; }
+.user-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:var(--surface); }
+.avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#0062E6,#12B76A); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px; }
+.user-info strong { display:block; font-size:13px; font-weight:600; } .user-info span { font-size:11px; color:var(--text-muted); }
+
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:14px 32px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar h1 { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; }
+.topbar p { font-size:12.5px; color:var(--text-muted); }
+
+.content { flex:1; overflow-y:auto; padding:28px 32px; }
+.settings-layout { display:grid; grid-template-columns:220px 1fr; gap:24px; max-width:900px; }
+
+/* Settings Nav */
+.settings-nav { display:flex; flex-direction:column; gap:4px; }
+.snav-item { padding:10px 14px; border-radius:10px; cursor:pointer; font-size:13.5px; font-weight:500; color:var(--text-muted); transition:all .15s; display:flex; align-items:center; gap:9px; }
+.snav-item:hover { background:var(--white); color:var(--text); }
+.snav-item.active { background:var(--blue-pale); color:var(--blue); }
+
+/* Sections */
+.settings-section { display:none; }
+.settings-section.active { display:block; }
+.section-card { background:var(--white); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:20px; }
+.section-title { font-size:16px; font-weight:700; margin-bottom:4px; }
+.section-sub   { font-size:13px; color:var(--text-muted); margin-bottom:24px; }
+
+/* Form */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-group { margin-bottom:0; }
+.form-group.full { grid-column:1/-1; }
+label { display:block; font-size:12.5px; font-weight:500; color:var(--text); margin-bottom:7px; }
+input[type=text], input[type=password], input[type=email], select, textarea {
+  width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px;
+  font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text); outline:none;
+  transition:border-color .2s, box-shadow .2s; background:white;
+}
+input:focus, select:focus, textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,98,230,.1); }
+textarea { resize:vertical; min-height:80px; }
+
+.save-btn { padding:11px 24px; background:var(--blue); color:white; border:none; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; margin-top:20px; }
+.save-btn:hover { background:#0052C4; }
+.save-btn.green { background:var(--green); }
+.save-btn.green:hover { background:#0E9256; }
+
+/* Alert */
+.alert { padding:12px 16px; border-radius:10px; font-size:13.5px; margin-bottom:16px; }
+.alert.success { background:var(--green-pale); color:#0E9256; border:1px solid #A7F3D0; }
+.alert.error   { background:#FFF0F0; color:#CC0000; border:1px solid #FFCCCC; }
+
+/* Toggle switch */
+.toggle-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border); }
+.toggle-row:last-child { border-bottom:none; }
+.toggle-info strong { font-size:14px; font-weight:500; display:block; }
+.toggle-info span   { font-size:12.5px; color:var(--text-muted); }
+.toggle { position:relative; width:44px; height:24px; }
+.toggle input { opacity:0; width:0; height:0; }
+.slider { position:absolute; cursor:pointer; inset:0; background:var(--border); border-radius:99px; transition:.3s; }
+.slider::before { content:''; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.3s; }
+input:checked + .slider { background:var(--green); }
+input:checked + .slider::before { transform:translateX(20px); }
+
+/* Danger zone */
+.danger-zone { background:#FFF0F0; border:1px solid #FFCCCC; border-radius:16px; padding:24px; }
+.danger-zone h3 { color:#CC0000; font-size:15px; margin-bottom:8px; }
+.danger-zone p  { font-size:13px; color:var(--text-muted); margin-bottom:16px; }
+.danger-btn { padding:10px 20px; background:#CC0000; color:white; border:none; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13.5px; font-weight:600; cursor:pointer; }
+
+/* Avatar upload */
+.avatar-big { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg,#0062E6,#12B76A); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:28px; margin-bottom:12px; }
+.upload-btn { padding:7px 14px; border:1.5px solid var(--border); background:white; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; }
+
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🩺</div><div><strong>MediPredict</strong><span>AI Health Assistant</span></div></div>
+  <nav>
+    <a href="/">🏠&nbsp; Dashboard</a>
+    <a href="/">🔍&nbsp; Diagnosis</a>
+    <a href="/history">📋&nbsp; History</a>
+    <a href="/hospitals">🗺️&nbsp; Find Hospitals</a>
+    <a href="/reports">📊&nbsp; Reports</a>
+    <a href="/settings" class="active">⚙️&nbsp; Settings</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card"><div class="avatar" id="avatarInitial">U</div><div class="user-info"><strong>{{ username }}</strong><span>Patient</span></div></div>
+    <a href="/logout" style="display:block;text-align:center;margin-top:12px;font-size:12.5px;color:#EF4444;text-decoration:none;padding:8px;border-radius:8px;">← Sign Out</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div><h1>Settings ⚙️</h1><p>Manage your account and preferences</p></div>
+  </div>
+  <div class="content">
+    <div class="settings-layout">
+
+      <!-- Settings Nav -->
+      <div class="settings-nav">
+        <div class="snav-item active" onclick="showSection('profile',this)">👤 Profile</div>
+        <div class="snav-item" onclick="showSection('security',this)">🔒 Security</div>
+        <div class="snav-item" onclick="showSection('notifications',this)">🔔 Notifications</div>
+        <div class="snav-item" onclick="showSection('medical',this)">🩺 Medical Info</div>
+        <div class="snav-item" onclick="showSection('danger',this)" style="color:#EF4444; margin-top:auto;">⚠️ Danger Zone</div>
+      </div>
+
+      <!-- Sections -->
+      <div>
+
+        <!-- Profile -->
+        <div class="settings-section active" id="section-profile">
+          {% if msg %}
+          <div class="alert {% if 'ERROR' in msg %}error{% else %}success{% endif %}">{{ msg }}</div>
+          {% endif %}
+          <div class="section-card">
+            <div class="section-title">Profile Information</div>
+            <div class="section-sub">Update your personal details</div>
+            <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
+              <div class="avatar-big" id="bigAvatar">{{ username[0].upper() }}</div>
+              <div>
+                <div style="font-size:15px; font-weight:600;">{{ username }}</div>
+                <div style="font-size:13px; color:var(--text-muted);">{{ user_data.get('email','—') }}</div>
+                <button class="upload-btn" style="margin-top:8px;" onclick="alert('Photo upload requires additional backend setup.')">📸 Change Photo</button>
+              </div>
+            </div>
+            <form method="POST" action="/settings">
+              <input type="hidden" name="action" value="profile">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>First Name</label>
+                  <input type="text" name="first_name" value="{{ user_data.get('first_name','') }}" placeholder="Arjun">
+                </div>
+                <div class="form-group">
+                  <label>Last Name</label>
+                  <input type="text" name="last_name" value="{{ user_data.get('last_name','') }}" placeholder="Sharma">
+                </div>
+                <div class="form-group full">
+                  <label>Email Address</label>
+                  <input type="email" name="email" value="{{ user_data.get('email','') }}" placeholder="arjun@example.com">
+                </div>
+                <div class="form-group">
+                  <label>Age</label>
+                  <input type="text" name="age" value="{{ user_data.get('age','') }}" placeholder="25">
+                </div>
+                <div class="form-group">
+                  <label>Gender</label>
+                  <select name="gender">
+                    <option value="">Select…</option>
+                    <option value="male" {% if user_data.get('gender')=='male' %}selected{% endif %}>Male</option>
+                    <option value="female" {% if user_data.get('gender')=='female' %}selected{% endif %}>Female</option>
+                    <option value="other" {% if user_data.get('gender')=='other' %}selected{% endif %}>Other</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="save-btn">💾 Save Changes</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <div class="settings-section" id="section-security">
+          <div class="section-card">
+            <div class="section-title">Change Password</div>
+            <div class="section-sub">Keep your account secure</div>
+            <form method="POST" action="/settings">
+              <input type="hidden" name="action" value="password">
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label>Current Password</label>
+                  <input type="password" name="old_password" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                  <label>New Password</label>
+                  <input type="password" name="new_password" placeholder="Min. 8 characters" required>
+                </div>
+                <div class="form-group">
+                  <label>Confirm New Password</label>
+                  <input type="password" placeholder="Repeat password">
+                </div>
+              </div>
+              <button type="submit" class="save-btn green">🔑 Update Password</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="settings-section" id="section-notifications">
+          <div class="section-card">
+            <div class="section-title">Notification Preferences</div>
+            <div class="section-sub">Choose what you want to be notified about</div>
+            <div class="toggle-row">
+              <div class="toggle-info"><strong>Diagnosis Reminders</strong><span>Get reminded to check your symptoms</span></div>
+              <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info"><strong>Report Ready</strong><span>Notify when a PDF report is generated</span></div>
+              <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info"><strong>Booking Confirmations</strong><span>Email when consultation is booked</span></div>
+              <label class="toggle"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info"><strong>Health Tips</strong><span>Weekly AI-generated health tips</span></div>
+              <label class="toggle"><input type="checkbox"><span class="slider"></span></label>
+            </div>
+            <button class="save-btn" style="margin-top:20px;" onclick="alert('Preferences saved!')">💾 Save Preferences</button>
+          </div>
+        </div>
+
+        <!-- Medical Info -->
+        <div class="settings-section" id="section-medical">
+          <div class="section-card">
+            <div class="section-title">Medical Information</div>
+            <div class="section-sub">Used to improve diagnosis accuracy</div>
+            <form method="POST" action="/settings">
+              <input type="hidden" name="action" value="profile">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Blood Group</label>
+                  <select name="blood_group">
+                    <option value="">Select…</option>
+                    {% for bg in ['A+','A-','B+','B-','AB+','AB-','O+','O-'] %}
+                    <option value="{{ bg }}" {% if user_data.get('blood_group')==bg %}selected{% endif %}>{{ bg }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Height (cm)</label>
+                  <input type="text" name="height" value="{{ user_data.get('height','') }}" placeholder="170">
+                </div>
+                <div class="form-group">
+                  <label>Weight (kg)</label>
+                  <input type="text" name="weight" value="{{ user_data.get('weight','') }}" placeholder="65">
+                </div>
+                <div class="form-group">
+                  <label>Allergies</label>
+                  <input type="text" name="allergies" value="{{ user_data.get('allergies','') }}" placeholder="Penicillin, Pollen…">
+                </div>
+                <div class="form-group full">
+                  <label>Existing Conditions</label>
+                  <textarea name="conditions" placeholder="Diabetes, Hypertension…">{{ user_data.get('conditions','') }}</textarea>
+                </div>
+                <div class="form-group full">
+                  <label>Current Medications</label>
+                  <textarea name="medications" placeholder="Metformin 500mg…">{{ user_data.get('medications','') }}</textarea>
+                </div>
+              </div>
+              <button type="submit" class="save-btn">💾 Save Medical Info</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="settings-section" id="section-danger">
+          <div class="danger-zone">
+            <h3>⚠️ Danger Zone</h3>
+            <p>These actions are irreversible. Please be certain before proceeding.</p>
+            <button class="danger-btn" onclick="if(confirm('Delete all history? This cannot be undone.')) fetch('/api/delete-record/ALL',{method:'DELETE'}).then(()=>alert('History cleared.'))">🗑 Clear All History</button>
+            &nbsp;
+            <button class="danger-btn" onclick="if(confirm('DELETE YOUR ACCOUNT? This is permanent.')) alert('In production: this would call /api/delete-account')">❌ Delete Account</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+document.getElementById('avatarInitial').textContent = "{{ username }}"[0]?.toUpperCase() || 'U';
+
+function showSection(id, el) {
+  document.querySelectorAll('.settings-section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.snav-item').forEach(s=>s.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict AI — Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --blue:#0062E6; --blue-pale:#EBF3FF; --green:#12B76A; --green-pale:#E6FBF2;
+  --amber:#F59E0B; --red:#EF4444; --text:#0D1B2A; --text-muted:#6B7A8D;
+  --border:#E2E8F0; --white:#FFFFFF; --surface:#F7F9FC; --sidebar-w:250px;
+}
+html,body { height:100%; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); }
+.layout { display:flex; height:100vh; overflow:hidden; }
+.sidebar { width:var(--sidebar-w); background:var(--white); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; flex-shrink:0; }
+.logo { display:flex; align-items:center; gap:10px; padding:0 8px 24px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.logo-icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#0062E6,#3D8EFF); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.logo strong { font-size:15px; font-weight:700; } .logo span { display:block; font-size:11px; color:var(--text-muted); }
+nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--text-muted); font-size:13.5px; font-weight:500; margin-bottom:2px; transition:all .18s; }
+nav a:hover { background:var(--surface); color:var(--text); } nav a.active { background:var(--blue-pale); color:var(--blue); }
+.sidebar-footer { margin-top:auto; border-top:1px solid var(--border); padding-top:16px; }
+.user-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:var(--surface); }
+.avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#0062E6,#12B76A); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px; }
+.user-info strong { display:block; font-size:13px; font-weight:600; } .user-info span { font-size:11px; color:var(--text-muted); }
+
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:14px 32px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar h1 { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; }
+.topbar p { font-size:12.5px; color:var(--text-muted); }
+.topbar-actions { display:flex; gap:10px; }
+.export-btn { padding:9px 18px; background:var(--blue); color:white; border:none; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer; }
+
+.content { flex:1; overflow-y:auto; padding:28px 32px; display:flex; flex-direction:column; gap:24px; }
+
+/* Summary cards */
+.summary-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.sum-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:18px 20px; }
+.sum-icon { font-size:24px; margin-bottom:8px; }
+.sum-val { font-size:26px; font-weight:700; font-family:'Sora',sans-serif; letter-spacing:-0.5px; }
+.sum-lbl { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.sum-trend { font-size:11.5px; margin-top:6px; }
+.sum-trend.up { color:var(--green); } .sum-trend.neutral { color:var(--text-muted); }
+
+/* Charts grid */
+.charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.chart-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:20px; }
+.chart-card.full { grid-column:1/-1; }
+.chart-title { font-size:14px; font-weight:600; margin-bottom:4px; }
+.chart-sub   { font-size:12px; color:var(--text-muted); margin-bottom:16px; }
+.chart-wrap  { position:relative; height:220px; }
+.chart-wrap.tall { height:300px; }
+
+/* Recent table */
+.report-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+.report-table th { text-align:left; padding:10px 14px; background:var(--surface); font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); border-bottom:1px solid var(--border); }
+.report-table td { padding:12px 14px; border-bottom:1px solid var(--border); }
+.report-table tr:hover td { background:var(--blue-pale); }
+.conf-badge { display:inline-block; padding:2px 9px; border-radius:99px; font-size:11.5px; font-weight:600; }
+.conf-high { background:var(--green-pale); color:var(--green); }
+.conf-mid  { background:#FFFBEB; color:#B45309; }
+.conf-low  { background:#FFF0F0; color:#CC0000; }
+.dl-btn { padding:5px 10px; border:1px solid var(--border); border-radius:7px; font-size:12px; background:white; cursor:pointer; text-decoration:none; color:var(--text); }
+.dl-btn:hover { background:var(--blue-pale); color:var(--blue); border-color:var(--blue); }
+
+.empty-state { text-align:center; padding:60px; color:var(--text-muted); }
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🩺</div><div><strong>MediPredict</strong><span>AI Health Assistant</span></div></div>
+  <nav>
+    <a href="/">🏠&nbsp; Dashboard</a>
+    <a href="/">🔍&nbsp; Diagnosis</a>
+    <a href="/history">📋&nbsp; History</a>
+    <a href="/hospitals">🗺️&nbsp; Find Hospitals</a>
+    <a href="/reports" class="active">📊&nbsp; Reports</a>
+    <a href="/settings">⚙️&nbsp; Settings</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card"><div class="avatar" id="avatarInitial">U</div><div class="user-info"><strong>{{ username }}</strong><span>Patient</span></div></div>
+    <a href="/logout" style="display:block;text-align:center;margin-top:12px;font-size:12.5px;color:#EF4444;text-decoration:none;padding:8px;border-radius:8px;">← Sign Out</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div><h1>Health Reports 📊</h1><p>Visual analytics of your diagnosis history</p></div>
+    <div class="topbar-actions">
+      <button class="export-btn" onclick="window.print()">🖨 Print Report</button>
+    </div>
+  </div>
+
+  <div class="content">
+    {% if records %}
+
+    <!-- Summary -->
+    <div class="summary-grid">
+      <div class="sum-card">
+        <div class="sum-icon">🔬</div>
+        <div class="sum-val">{{ records|length }}</div>
+        <div class="sum-lbl">Total Diagnoses</div>
+        <div class="sum-trend neutral">All time</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-icon">🎯</div>
+        <div class="sum-val" id="avgConf">—</div>
+        <div class="sum-lbl">Avg Confidence</div>
+        <div class="sum-trend up">↑ AI score</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-icon">🩺</div>
+        <div class="sum-val" id="uniqueDis">—</div>
+        <div class="sum-lbl">Unique Conditions</div>
+        <div class="sum-trend neutral">Detected</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-icon">📅</div>
+        <div class="sum-val" id="lastDate">—</div>
+        <div class="sum-lbl">Last Diagnosis</div>
+        <div class="sum-trend neutral">Recent</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Diagnoses Over Time</div>
+        <div class="chart-sub">Number of analyses per month</div>
+        <div class="chart-wrap"><canvas id="timelineChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Disease Distribution</div>
+        <div class="chart-sub">Most frequently diagnosed conditions</div>
+        <div class="chart-wrap"><canvas id="diseaseChart"></canvas></div>
+      </div>
+      <div class="chart-card full">
+        <div class="chart-title">Confidence Score Trend</div>
+        <div class="chart-sub">AI confidence across all diagnoses</div>
+        <div class="chart-wrap tall"><canvas id="confidenceChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="chart-card">
+      <div class="chart-title" style="margin-bottom:16px;">All Diagnoses</div>
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Date</th><th>Primary Diagnosis</th>
+            <th>Confidence</th><th>Symptoms</th><th>Report</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td style="color:var(--text-muted);">{{ loop.index }}</td>
+            <td>{{ r.date }}</td>
+            <td><strong>{{ r.top_disease }}</strong></td>
+            <td>
+              {# prob_float is guaranteed in new records; fall back for old ones #}
+              {% if r.results and r.results[0].prob_float is defined %}
+                {% set conf = r.results[0].prob_float %}
+              {% else %}
+                {% set conf_str = r.confidence | string %}
+                {% set conf = conf_str[:-1] | float if conf_str.endswith('%') else conf_str | float %}
+              {% endif %}
+              <span class="conf-badge {% if conf >= 60 %}conf-high{% elif conf >= 30 %}conf-mid{% else %}conf-low{% endif %}">
+                {{ r.confidence }}
+              </span>
+            </td>
+            <td style="color:var(--text-muted);">{{ r.symptoms[:3] | join(', ') | replace('_',' ') }}{% if r.symptoms|length > 3 %}…{% endif %}</td>
+            <td><a href="/download-report/{{ r.id }}" class="dl-btn">📄 Download</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div style="font-size:56px;margin-bottom:16px;">📊</div>
+      <h3 style="font-size:18px;font-weight:600;margin-bottom:8px;">No data yet</h3>
+      <p>Run a diagnosis on the <a href="/" style="color:var(--blue);">Dashboard</a> to see reports here.</p>
+    </div>
+    {% endif %}
+  </div>
+</main>
+</div>
+
+<script>
+document.getElementById('avatarInitial').textContent = "{{ username }}"[0]?.toUpperCase() || 'U';
+
+// Safe parse — confidence may be "72.34%" or a float number
+function parseConf(r) {
+  const raw = r.confidence || r.prob_float || '0';
+  return parseFloat(String(raw).replace('%','')) || 0;
+}
+
+let records = [];
+try {
+  records = {{ records | tojson | safe }};
+} catch(e) {
+  console.error('Could not parse records:', e);
+}
+
+if (records.length) {
+  // ── Summary stats ──
+  const confs = records.map(parseConf);
+  const avgC  = (confs.reduce((a,b)=>a+b, 0) / confs.length).toFixed(1);
+  const uniq  = new Set(records.map(r => r.top_disease)).size;
+  const last  = (records[0].date || '').split(' ')[0].split('-').slice(1).reverse().join('/');
+  document.getElementById('avgConf').textContent  = avgC + '%';
+  document.getElementById('uniqueDis').textContent = uniq;
+  document.getElementById('lastDate').textContent  = last || '—';
+
+  // ── Timeline chart ──
+  const monthMap = {};
+  records.forEach(r => {
+    const m = (r.date || '').substr(0,7);
+    if (m) monthMap[m] = (monthMap[m] || 0) + 1;
+  });
+  const months = Object.keys(monthMap).sort();
+  new Chart(document.getElementById('timelineChart'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{ label:'Diagnoses', data: months.map(m=>monthMap[m]),
+        backgroundColor:'rgba(0,98,230,0.75)', borderRadius:6, borderSkipped:false }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1, precision:0 } } }
+    }
+  });
+
+  // ── Disease distribution doughnut ──
+  const diseaseMap = {};
+  records.forEach(r => { diseaseMap[r.top_disease] = (diseaseMap[r.top_disease]||0)+1; });
+  const topDiseases = Object.entries(diseaseMap).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  const colors = ['#0062E6','#12B76A','#F59E0B','#EF4444','#8B5CF6','#EC4899','#06B6D4'];
+  new Chart(document.getElementById('diseaseChart'), {
+    type: 'doughnut',
+    data: {
+      labels: topDiseases.map(d=>d[0]),
+      datasets: [{ data: topDiseases.map(d=>d[1]),
+        backgroundColor: colors, borderWidth:2, borderColor:'white' }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'right', labels:{ font:{size:11}, padding:10, boxWidth:12 } } }
+    }
+  });
+
+  // ── Confidence trend line ──
+  // Sort oldest → newest for the trend line
+  const sorted     = records.slice().reverse();
+  const confLabels = sorted.map((_,i) => `#${i+1}`);
+  const confData   = sorted.map(parseConf);
+  new Chart(document.getElementById('confidenceChart'), {
+    type: 'line',
+    data: {
+      labels: confLabels,
+      datasets: [{
+        label:'Confidence %', data: confData,
+        borderColor:'#0062E6', backgroundColor:'rgba(0,98,230,0.08)',
+        fill:true, tension:0.4, pointBackgroundColor:'#0062E6', pointRadius:5,
+        pointHoverRadius:7
+      }]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      scales:{
+        y:{ min:0, max:100, ticks:{ callback: v => v+'%' } }
+      },
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label: ctx => `Confidence: ${ctx.parsed.y.toFixed(2)}%` } }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>

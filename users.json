@@ -1,0 +1,25 @@
+{
+  "sachin01": {
+    "password": "123",
+    "paid": true,
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "age": "",
+    "gender": "",
+    "blood_group": "A+"
+  },
+  "angel": {
+    "password": "123",
+    "paid": true
+  },
+  "Amita01": {
+    "password": "123",
+    "paid": true,
+    "first_name": "Amita",
+    "last_name": "Sharma",
+    "email": "amitash3046@gmail.com",
+    "role": "patient",
+    "joined": "2026-03-19"
+  }
+}

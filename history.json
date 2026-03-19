@@ -1,0 +1,293 @@
+{
+  "sachin01": [
+    {
+      "id": "6aee3546",
+      "date": "2026-03-19 14:19",
+      "symptoms": [],
+      "results": [
+        {
+          "disease": "Migraine",
+          "probability": "78.98%",
+          "prob_float": 78.98
+        },
+        {
+          "disease": "Arthritis",
+          "probability": "21.01%",
+          "prob_float": 21.01
+        },
+        {
+          "disease": "Hypertension",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Migraine",
+      "confidence": "78.98%"
+    },
+    {
+      "id": "51564b16",
+      "date": "2026-03-19 14:20",
+      "symptoms": [],
+      "results": [
+        {
+          "disease": "Migraine",
+          "probability": "78.98%",
+          "prob_float": 78.98
+        },
+        {
+          "disease": "Arthritis",
+          "probability": "21.01%",
+          "prob_float": 21.01
+        },
+        {
+          "disease": "Hypertension",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Migraine",
+      "confidence": "78.98%"
+    },
+    {
+      "id": "83bd8aca",
+      "date": "2026-03-19 14:20",
+      "symptoms": [],
+      "results": [
+        {
+          "disease": "Migraine",
+          "probability": "78.98%",
+          "prob_float": 78.98
+        },
+        {
+          "disease": "Arthritis",
+          "probability": "21.01%",
+          "prob_float": 21.01
+        },
+        {
+          "disease": "Hypertension",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Migraine",
+      "confidence": "78.98%"
+    },
+    {
+      "id": "fc8aa82c",
+      "date": "2026-03-19 14:34",
+      "symptoms": [],
+      "results": [
+        {
+          "disease": "Migraine",
+          "probability": "78.98%",
+          "prob_float": 78.98
+        },
+        {
+          "disease": "Arthritis",
+          "probability": "21.01%",
+          "prob_float": 21.01
+        },
+        {
+          "disease": "Hypertension",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Migraine",
+      "confidence": "78.98%"
+    },
+    {
+      "id": "dda0f8e6",
+      "date": "2026-03-19 14:34",
+      "symptoms": [],
+      "results": [
+        {
+          "disease": "Migraine",
+          "probability": "78.98%",
+          "prob_float": 78.98
+        },
+        {
+          "disease": "Arthritis",
+          "probability": "21.01%",
+          "prob_float": 21.01
+        },
+        {
+          "disease": "Hypertension",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Migraine",
+      "confidence": "78.98%"
+    },
+    {
+      "id": "af3704e9",
+      "date": "2026-03-19 14:35",
+      "symptoms": [
+        "dizziness"
+      ],
+      "results": [
+        {
+          "disease": "Hypertension",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "Tuberculosis",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "Typhoid",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Hypertension",
+      "confidence": "100.00%"
+    },
+    {
+      "id": "b2681d79",
+      "date": "2026-03-19 14:35",
+      "symptoms": [
+        "vomiting"
+      ],
+      "results": [
+        {
+          "disease": "Malaria",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "Tuberculosis",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "Typhoid",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Malaria",
+      "confidence": "100.00%"
+    },
+    {
+      "id": "67c6b93b",
+      "date": "2026-03-19 14:52",
+      "symptoms": [
+        "headache",
+        "joint_pain",
+        "dizziness",
+        "weight_loss"
+      ],
+      "results": [
+        {
+          "disease": "Hypertension",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "Dengue",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "Tuberculosis",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Hypertension",
+      "confidence": "100.00%"
+    },
+    {
+      "id": "60d21bd1",
+      "date": "2026-03-19 15:07",
+      "symptoms": [
+        "rash",
+        "dry_skin",
+        "yellow_skin"
+      ],
+      "results": [
+        {
+          "disease": "Chikungunya",
+          "probability": "39.91%",
+          "prob_float": 39.91
+        },
+        {
+          "disease": "Hepatitis B",
+          "probability": "30.30%",
+          "prob_float": 30.3
+        },
+        {
+          "disease": "Hepatitis C",
+          "probability": "29.80%",
+          "prob_float": 29.8
+        }
+      ],
+      "top_disease": "Chikungunya",
+      "confidence": "39.91%"
+    },
+    {
+      "id": "3f4fdc10",
+      "date": "2026-03-19 22:21",
+      "symptoms": [
+        "headache",
+        "shortness_of_breath",
+        "dizziness"
+      ],
+      "results": [
+        {
+          "disease": "Hypertension",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "COVID-19",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "Tuberculosis",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Hypertension",
+      "confidence": "100.00%"
+    }
+  ],
+  "Amita01": [
+    {
+      "id": "4ce3fc6e",
+      "date": "2026-03-19 15:11",
+      "symptoms": [
+        "fever",
+        "cough",
+        "fatigue",
+        "vomiting",
+        "chest_pain"
+      ],
+      "results": [
+        {
+          "disease": "Pneumonia",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "Influenza",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "COVID-19",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Pneumonia",
+      "confidence": "100.00%"
+    }
+  ]
+}

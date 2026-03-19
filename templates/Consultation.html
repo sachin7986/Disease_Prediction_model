@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict AI — Book Consultation</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --blue:#0062E6; --blue-pale:#EBF3FF; --green:#12B76A; --green-pale:#E6FBF2;
+  --text:#0D1B2A; --text-muted:#6B7A8D; --border:#E2E8F0;
+  --white:#FFFFFF; --surface:#F7F9FC; --sidebar-w:250px;
+}
+html,body { height:100%; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); }
+.layout { display:flex; height:100vh; overflow:hidden; }
+.sidebar { width:var(--sidebar-w); background:var(--white); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; flex-shrink:0; }
+.logo { display:flex; align-items:center; gap:10px; padding:0 8px 24px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.logo-icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#0062E6,#3D8EFF); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.logo strong { font-size:15px; font-weight:700; } .logo span { display:block; font-size:11px; color:var(--text-muted); }
+nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--text-muted); font-size:13.5px; font-weight:500; margin-bottom:2px; transition:all .18s; }
+nav a:hover { background:var(--surface); color:var(--text); } nav a.active { background:var(--blue-pale); color:var(--blue); }
+.sidebar-footer { margin-top:auto; border-top:1px solid var(--border); padding-top:16px; }
+.user-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:var(--surface); }
+.avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#0062E6,#12B76A); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px; }
+.user-info strong { display:block; font-size:13px; font-weight:600; } .user-info span { font-size:11px; color:var(--text-muted); }
+
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:14px 32px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar h1 { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; }
+.topbar p { font-size:12.5px; color:var(--text-muted); }
+.content { flex:1; overflow-y:auto; padding:28px 32px; }
+
+.consult-layout { display:grid; grid-template-columns:1fr 360px; gap:24px; }
+
+/* Doctor cards */
+.doctors-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+.doctor-card { background:var(--white); border:1.5px solid var(--border); border-radius:14px; padding:18px; cursor:pointer; transition:all .2s; }
+.doctor-card:hover { border-color:var(--blue); box-shadow:0 4px 16px rgba(0,98,230,.1); }
+.doctor-card.selected { border-color:var(--blue); background:var(--blue-pale); }
+.doc-avatar { width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; margin-bottom:10px; }
+.doc-name { font-size:14px; font-weight:700; margin-bottom:2px; }
+.doc-spec { font-size:12px; color:var(--text-muted); margin-bottom:6px; }
+.doc-meta { display:flex; gap:6px; flex-wrap:wrap; }
+.doc-badge { font-size:11px; padding:2px 8px; border-radius:99px; }
+.doc-avail { background:var(--green-pale); color:var(--green); }
+.doc-rating { background:#FFFBEB; color:#B45309; }
+.doc-exp { background:var(--surface); color:var(--text-muted); }
+
+/* Booking form */
+.book-card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:24px; position:sticky; top:0; }
+.book-title { font-size:16px; font-weight:700; margin-bottom:4px; }
+.book-sub { font-size:13px; color:var(--text-muted); margin-bottom:20px; }
+
+.form-group { margin-bottom:16px; }
+label { display:block; font-size:12.5px; font-weight:500; margin-bottom:7px; }
+input[type=date], input[type=text], select, textarea {
+  width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px;
+  font-family:'DM Sans',sans-serif; font-size:14px; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus, textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,98,230,.1); }
+
+/* Time slots */
+.time-slots { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.time-slot { padding:8px; text-align:center; border:1.5px solid var(--border); border-radius:8px; font-size:12px; font-weight:500; cursor:pointer; transition:all .15s; background:white; }
+.time-slot:hover, .time-slot.selected { background:var(--blue-pale); border-color:var(--blue); color:var(--blue); }
+.time-slot.booked { background:var(--surface); color:var(--border); cursor:not-allowed; }
+
+/* Type toggle */
+.type-toggle { display:flex; background:var(--surface); border-radius:10px; padding:4px; border:1px solid var(--border); margin-bottom:16px; }
+.type-btn { flex:1; padding:8px; border:none; background:transparent; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; color:var(--text-muted); transition:all .2s; }
+.type-btn.active { background:white; color:var(--blue); box-shadow:0 2px 8px rgba(0,98,230,.1); }
+
+.book-btn { width:100%; padding:13px; background:linear-gradient(135deg,#0062E6,#3D8EFF); color:white; border:none; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:600; cursor:pointer; margin-top:8px; }
+.book-btn:hover { box-shadow:0 6px 20px rgba(0,98,230,.3); }
+
+/* Success state */
+.success-card { display:none; background:var(--green-pale); border:1px solid #A7F3D0; border-radius:14px; padding:28px; text-align:center; }
+.success-card.visible { display:block; }
+.success-icon { font-size:48px; margin-bottom:12px; }
+.success-id { font-size:22px; font-weight:700; font-family:'Sora',sans-serif; color:var(--green); margin-bottom:4px; }
+.success-sub { font-size:13.5px; color:var(--text-muted); }
+
+/* My bookings */
+.booking-list { display:flex; flex-direction:column; gap:12px; }
+.booking-item { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
+.bi-info strong { display:block; font-size:14px; } .bi-info span { font-size:12px; color:var(--text-muted); }
+.bi-badge { padding:4px 10px; border-radius:99px; font-size:11.5px; font-weight:600; background:var(--green-pale); color:var(--green); }
+
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🩺</div><div><strong>MediPredict</strong><span>AI Health Assistant</span></div></div>
+  <nav>
+    <a href="/">🏠&nbsp; Dashboard</a>
+    <a href="/">🔍&nbsp; Diagnosis</a>
+    <a href="/history">📋&nbsp; History</a>
+    <a href="/hospitals">🗺️&nbsp; Find Hospitals</a>
+    <a href="/reports">📊&nbsp; Reports</a>
+    <a href="/settings">⚙️&nbsp; Settings</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card"><div class="avatar" id="avatarInitial">U</div><div class="user-info"><strong>{{ username }}</strong><span>Patient</span></div></div>
+    <a href="/logout" style="display:block;text-align:center;margin-top:12px;font-size:12.5px;color:#EF4444;text-decoration:none;padding:8px;border-radius:8px;">← Sign Out</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div><h1>Book Consultation 📅</h1><p>Connect with verified doctors online or in-person</p></div>
+  </div>
+
+  <div class="content">
+    <div class="consult-layout">
+
+      <!-- LEFT: Doctors + My Bookings -->
+      <div>
+        <div style="font-size:15px; font-weight:700; margin-bottom:16px;">Available Doctors</div>
+        <div class="doctors-grid" id="doctorsGrid">
+          <!-- Rendered by JS -->
+        </div>
+
+        <div style="font-size:15px; font-weight:700; margin-bottom:16px; margin-top:8px;">My Bookings</div>
+        <div class="booking-list" id="myBookings">
+          <p style="color:var(--text-muted); font-size:13.5px;">No bookings yet. Book your first consultation above.</p>
+        </div>
+      </div>
+
+      <!-- RIGHT: Booking Form -->
+      <div>
+        <div class="book-card">
+          <div class="book-title">📅 Schedule Appointment</div>
+          <div class="book-sub" id="selectedDocName">Select a doctor to continue</div>
+
+          <div class="type-toggle">
+            <button class="type-btn active" onclick="setType(this,'online')">💻 Online</button>
+            <button class="type-btn" onclick="setType(this,'in-person')">🏥 In-Person</button>
+          </div>
+
+          <div class="form-group">
+            <label>Select Date</label>
+            <input type="date" id="bookDate" min="">
+          </div>
+
+          <div class="form-group">
+            <label>Select Time Slot</label>
+            <div class="time-slots" id="timeSlots"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Reason for Visit</label>
+            <input type="text" id="bookReason" placeholder="e.g. Fever and headache for 3 days">
+          </div>
+
+          <button class="book-btn" onclick="bookNow()">✅ Confirm Booking</button>
+        </div>
+
+        <!-- Success card -->
+        <div class="success-card" id="successCard" style="margin-top:16px;">
+          <div class="success-icon">🎉</div>
+          <div class="success-id" id="successId">—</div>
+          <p style="font-size:14px; font-weight:600; margin-bottom:4px;">Booking Confirmed!</p>
+          <div class="success-sub" id="successDetails">—</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+document.getElementById('avatarInitial').textContent = "{{ username }}"[0]?.toUpperCase() || 'U';
+
+const DOCTORS = [
+  { id:'d1', name:'Dr. Priya Sharma', spec:'General Physician', emoji:'👩‍⚕️', rating:'4.8', exp:'12 yrs', bg:'#EBF3FF' },
+  { id:'d2', name:'Dr. Rahul Gupta',  spec:'Internal Medicine', emoji:'👨‍⚕️', rating:'4.7', exp:'8 yrs',  bg:'#E6FBF2' },
+  { id:'d3', name:'Dr. Anita Patel',  spec:'Dermatologist',     emoji:'🧑‍⚕️', rating:'4.9', exp:'15 yrs', bg:'#FFF7ED' },
+  { id:'d4', name:'Dr. Vikram Singh', spec:'Neurologist',       emoji:'👨‍⚕️', rating:'4.6', exp:'10 yrs', bg:'#F5F3FF' },
+];
+
+const TIME_SLOTS = ['9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM'];
+let selectedDoctor = null, selectedTime = null, consultType = 'online';
+
+// Set min date to today
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('bookDate').min = today;
+document.getElementById('bookDate').value = today;
+
+// Render doctors
+document.getElementById('doctorsGrid').innerHTML = DOCTORS.map(d=>`
+  <div class="doctor-card" onclick="selectDoctor('${d.id}')" id="doc-${d.id}">
+    <div class="doc-avatar" style="background:${d.bg}">${d.emoji}</div>
+    <div class="doc-name">${d.name}</div>
+    <div class="doc-spec">${d.spec}</div>
+    <div class="doc-meta">
+      <span class="doc-badge doc-avail">● Available</span>
+      <span class="doc-badge doc-rating">⭐ ${d.rating}</span>
+      <span class="doc-badge doc-exp">${d.exp}</span>
+    </div>
+  </div>
+`).join('');
+
+// Render time slots
+document.getElementById('timeSlots').innerHTML = TIME_SLOTS.map(t=>
+  `<div class="time-slot" onclick="selectTime('${t}',this)">${t}</div>`
+).join('');
+
+// Pre-select hospital from URL if coming from hospitals page
+const urlParams = new URLSearchParams(window.location.search);
+const hospName = urlParams.get('hospital');
+if (hospName) document.getElementById('bookReason').value = `Visit at ${hospName}`;
+
+function selectDoctor(id) {
+  document.querySelectorAll('.doctor-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('doc-'+id).classList.add('selected');
+  selectedDoctor = DOCTORS.find(d=>d.id===id);
+  document.getElementById('selectedDocName').textContent = `with ${selectedDoctor.name} — ${selectedDoctor.spec}`;
+}
+
+function selectTime(t, el) {
+  document.querySelectorAll('.time-slot').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTime = t;
+}
+
+function setType(btn, type) {
+  document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  consultType = type;
+}
+
+function bookNow() {
+  if (!selectedDoctor) { alert('Please select a doctor first.'); return; }
+  if (!selectedTime)   { alert('Please select a time slot.'); return; }
+  const date = document.getElementById('bookDate').value;
+  if (!date) { alert('Please select a date.'); return; }
+
+  fetch('/book-consultation', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      doctor: selectedDoctor.name,
+      date, time: selectedTime,
+      type: consultType,
+      reason: document.getElementById('bookReason').value
+    })
+  })
+  .then(r=>r.json())
+  .then(booking => {
+    document.getElementById('successId').textContent = `Booking #${booking.booking_id}`;
+    document.getElementById('successDetails').textContent =
+      `${selectedDoctor.name} • ${date} at ${selectedTime} • ${consultType}`;
+    document.getElementById('successCard').classList.add('visible');
+
+    // Add to my bookings
+    const list = document.getElementById('myBookings');
+    if (list.querySelector('p')) list.innerHTML = '';
+    list.innerHTML += `
+      <div class="booking-item">
+        <div class="bi-info"><strong>${selectedDoctor.name}</strong><span>${date} at ${selectedTime} • ${consultType}</span></div>
+        <span class="bi-badge">✓ Confirmed</span>
+      </div>
+    `;
+  })
+  .catch(()=>{
+    // Offline demo
+    const fakeId = Math.random().toString(36).substring(2,8).toUpperCase();
+    document.getElementById('successId').textContent = `Booking #${fakeId}`;
+    document.getElementById('successDetails').textContent = `${selectedDoctor.name} • ${document.getElementById('bookDate').value} at ${selectedTime} • ${consultType}`;
+    document.getElementById('successCard').classList.add('visible');
+  });
+}
+</script>
+</body>
+</html>

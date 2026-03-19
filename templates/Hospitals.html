@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict AI — Find Hospitals</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --blue:#0062E6; --blue-pale:#EBF3FF; --green:#12B76A; --green-pale:#E6FBF2;
+  --text:#0D1B2A; --text-muted:#6B7A8D; --border:#E2E8F0;
+  --white:#FFFFFF; --surface:#F7F9FC; --sidebar-w:250px;
+}
+html,body { height:100%; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); }
+.layout { display:flex; height:100vh; overflow:hidden; }
+.sidebar { width:var(--sidebar-w); background:var(--white); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; flex-shrink:0; }
+.logo { display:flex; align-items:center; gap:10px; padding:0 8px 24px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.logo-icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#0062E6,#3D8EFF); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.logo strong { font-size:15px; font-weight:700; } .logo span { display:block; font-size:11px; color:var(--text-muted); }
+nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; text-decoration:none; color:var(--text-muted); font-size:13.5px; font-weight:500; margin-bottom:2px; transition:all .18s; }
+nav a:hover { background:var(--surface); color:var(--text); }
+nav a.active { background:var(--blue-pale); color:var(--blue); }
+.sidebar-footer { margin-top:auto; border-top:1px solid var(--border); padding-top:16px; }
+.user-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:var(--surface); }
+.avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#0062E6,#12B76A); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px; }
+.user-info strong { display:block; font-size:13px; font-weight:600; }
+.user-info span { font-size:11px; color:var(--text-muted); }
+
+/* MAIN */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:14px 32px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar h1 { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; }
+.topbar p { font-size:12.5px; color:var(--text-muted); }
+
+/* HOSPITALS LAYOUT */
+.hosp-layout { flex:1; display:grid; grid-template-columns:360px 1fr; overflow:hidden; }
+
+/* LEFT PANEL */
+.hosp-left { background:var(--white); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.hosp-search { padding:16px; border-bottom:1px solid var(--border); }
+.hosp-search input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13.5px; outline:none; }
+.hosp-search input:focus { border-color:var(--blue); }
+
+.filter-tabs { display:flex; gap:6px; padding:12px 16px; border-bottom:1px solid var(--border); overflow-x:auto; }
+.ftab { padding:5px 12px; border-radius:99px; border:1px solid var(--border); background:white; font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; color:var(--text-muted); }
+.ftab.active, .ftab:hover { background:var(--blue-pale); color:var(--blue); border-color:transparent; }
+
+.hosp-list { overflow-y:auto; flex:1; }
+.hosp-item { padding:16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; }
+.hosp-item:hover, .hosp-item.selected { background:var(--blue-pale); }
+.hi-name { font-size:14px; font-weight:600; margin-bottom:3px; }
+.hi-addr { font-size:12px; color:var(--text-muted); margin-bottom:6px; }
+.hi-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.hi-badge { font-size:11px; padding:2px 8px; border-radius:99px; font-weight:500; }
+.hi-badge.open   { background:var(--green-pale); color:var(--green); }
+.hi-badge.closed { background:#FFF0F0; color:#CC0000; }
+.hi-badge.rating { background:#FFFBEB; color:#B45309; }
+.hi-badge.dist   { background:var(--surface); color:var(--text-muted); }
+
+.load-state { padding:40px; text-align:center; color:var(--text-muted); }
+.spin { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--blue); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 12px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* MAP */
+#map { width:100%; height:100%; }
+.map-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--text-muted); gap:12px; }
+.map-placeholder .icon { font-size:48px; }
+
+/* Detail drawer */
+.detail-drawer { position:fixed; right:0; top:0; bottom:0; width:340px; background:white; box-shadow:-4px 0 24px rgba(0,0,0,.12); z-index:500; transform:translateX(100%); transition:transform .3s; display:flex; flex-direction:column; overflow-y:auto; padding:24px; }
+.detail-drawer.open { transform:translateX(0); }
+.dd-close { position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-muted); }
+.dd-name { font-size:18px; font-weight:700; margin:8px 0 4px; font-family:'Sora',sans-serif; }
+.dd-addr { font-size:13px; color:var(--text-muted); margin-bottom:16px; }
+.dd-row  { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.dd-actions { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+.dd-btn { padding:11px 16px; border-radius:10px; border:none; font-family:'DM Sans',sans-serif; font-size:13.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; }
+.dd-btn.primary { background:var(--blue); color:white; }
+.dd-btn.secondary { background:var(--surface); border:1px solid var(--border); color:var(--text); }
+.dd-label { font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin:12px 0 6px; }
+
+::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🩺</div><div><strong>MediPredict</strong><span>AI Health Assistant</span></div></div>
+  <nav>
+    <a href="/">🏠&nbsp; Dashboard</a>
+    <a href="/">🔍&nbsp; Diagnosis</a>
+    <a href="/history">📋&nbsp; History</a>
+    <a href="/hospitals" class="active">🗺️&nbsp; Find Hospitals</a>
+    <a href="/reports">📊&nbsp; Reports</a>
+    <a href="/settings">⚙️&nbsp; Settings</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card"><div class="avatar" id="avatarInitial">U</div><div class="user-info"><strong>{{ username }}</strong><span>Patient</span></div></div>
+    <a href="/logout" style="display:block;text-align:center;margin-top:12px;font-size:12.5px;color:#EF4444;text-decoration:none;padding:8px;border-radius:8px;">← Sign Out</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div><h1>Find Nearby Hospitals 🗺️</h1><p>Locate hospitals and clinics around you</p></div>
+  </div>
+
+  <div class="hosp-layout">
+    <!-- LEFT: list -->
+    <div class="hosp-left">
+      <div class="hosp-search">
+        <input type="text" id="hospSearch" placeholder="🔍  Search hospitals, clinics…" oninput="filterHospitals()">
+      </div>
+      <div class="filter-tabs">
+        <div class="ftab active" onclick="setType(this,'hospital')">🏥 Hospitals</div>
+        <div class="ftab" onclick="setType(this,'clinic')">🏨 Clinics</div>
+        <div class="ftab" onclick="setType(this,'pharmacy')">💊 Pharmacy</div>
+        <div class="ftab" onclick="setType(this,'doctor')">👨‍⚕️ Doctors</div>
+      </div>
+      <div class="hosp-list" id="hospList">
+        <div class="load-state"><div class="spin"></div>Detecting your location…</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: map -->
+    <div id="mapContainer">
+      <div id="map">
+        {% if maps_key and maps_key != "YOUR_GOOGLE_MAPS_API_KEY_HERE" %}
+        <!-- Map loads via JS -->
+        {% else %}
+        <div class="map-placeholder">
+          <div class="icon">🗺️</div>
+          <strong>Google Maps</strong>
+          <p style="font-size:13px;max-width:300px;text-align:center;">Add your Google Maps API key in <code>app.py</code> to enable the live map.<br><br>Set the <code>GOOGLE_MAPS_API_KEY</code> environment variable.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Detail Drawer -->
+<div class="detail-drawer" id="detailDrawer">
+  <button class="dd-close" onclick="closeDrawer()">✕</button>
+  <div id="drawerContent"></div>
+</div>
+
+</div>
+
+<!-- Google Maps Script — only loads if key is set -->
+{% if maps_key and maps_key != "YOUR_GOOGLE_MAPS_API_KEY_HERE" %}
+<script>
+let map, service, markers = [], infoWindow;
+let currentType = 'hospital';
+let allPlaces = [];
+
+function initMap() {
+  if (!navigator.geolocation) { showMockHospitals(); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    map = new google.maps.Map(document.getElementById('map'), {
+      center: userLoc, zoom: 14,
+      styles: [
+        {featureType:'poi.medical',elementType:'geometry',stylers:[{color:'#e8f4fd'}]},
+        {featureType:'water',stylers:[{color:'#c9e8f7'}]},
+        {featureType:'road',elementType:'geometry',stylers:[{color:'#f5f5f5'}]}
+      ]
+    });
+    infoWindow = new google.maps.InfoWindow();
+
+    // User marker
+    new google.maps.Marker({ position:userLoc, map,
+      icon:{ path:google.maps.SymbolPath.CIRCLE, scale:8, fillColor:'#0062E6', fillOpacity:1, strokeColor:'white', strokeWeight:2 },
+      title:'You are here'
+    });
+
+    searchNearby(userLoc);
+  }, () => showMockHospitals());
+}
+
+function searchNearby(location) {
+  const request = { location, radius:'5000', type:[currentType] };
+  service = new google.maps.places.PlacesService(map);
+  service.nearbySearch(request, (results, status) => {
+    if (status === google.maps.places.PlacesServiceStatus.OK) {
+      allPlaces = results;
+      renderList(results);
+      placeMarkers(results);
+    } else { showMockHospitals(); }
+  });
+}
+
+function placeMarkers(places) {
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+  places.forEach((p, i) => {
+    const marker = new google.maps.Marker({
+      position: p.geometry.location, map,
+      title: p.name,
+      icon: { url:'https://maps.google.com/mapfiles/ms/icons/red-dot.png' }
+    });
+    marker.addListener('click', () => showDetail(p));
+    markers.push(marker);
+  });
+}
+
+function renderList(places) {
+  const list = document.getElementById('hospList');
+  if (!places.length) { list.innerHTML = '<div class="load-state">No results found nearby.</div>'; return; }
+  list.innerHTML = places.map((p,i) => `
+    <div class="hosp-item" onclick="selectHospital(${i})">
+      <div class="hi-name">${p.name}</div>
+      <div class="hi-addr">${p.vicinity || ''}</div>
+      <div class="hi-meta">
+        ${p.opening_hours?.open_now ? '<span class="hi-badge open">● Open</span>' : '<span class="hi-badge closed">● Closed</span>'}
+        ${p.rating ? `<span class="hi-badge rating">⭐ ${p.rating}</span>` : ''}
+        ${p.user_ratings_total ? `<span class="hi-badge dist">${p.user_ratings_total} reviews</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectHospital(idx) {
+  document.querySelectorAll('.hosp-item').forEach((el,i) => el.classList.toggle('selected', i===idx));
+  const p = allPlaces[idx];
+  map.panTo(p.geometry.location);
+  map.setZoom(16);
+  showDetail(p);
+}
+
+function showDetail(place) {
+  service.getDetails({ placeId: place.place_id, fields:['name','vicinity','formatted_phone_number','website','opening_hours','rating','url'] }, (details, status) => {
+    const p = (status === google.maps.places.PlacesServiceStatus.OK) ? details : place;
+    document.getElementById('drawerContent').innerHTML = `
+      <div style="font-size:22px; margin-bottom:4px;">🏥</div>
+      <div class="dd-name">${p.name}</div>
+      <div class="dd-addr">${p.vicinity || p.formatted_address || ''}</div>
+      <div class="dd-row">
+        ${p.opening_hours?.open_now !== undefined ? `<span class="hi-badge ${p.opening_hours.open_now ? 'open' : 'closed'}">${p.opening_hours.open_now ? '● Open Now' : '● Closed'}</span>` : ''}
+        ${p.rating ? `<span class="hi-badge rating">⭐ ${p.rating}</span>` : ''}
+      </div>
+      ${p.formatted_phone_number ? `<p class="dd-label">Phone</p><p style="font-size:14px;">${p.formatted_phone_number}</p>` : ''}
+      ${p.opening_hours?.weekday_text ? `<p class="dd-label">Hours</p>${p.opening_hours.weekday_text.map(h=>`<p style="font-size:12px;color:var(--text-muted);">${h}</p>`).join('')}` : ''}
+      <div class="dd-actions">
+        <a href="${p.url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}`}" target="_blank" class="dd-btn primary" style="text-decoration:none;">🗺 Get Directions</a>
+        ${p.website ? `<a href="${p.website}" target="_blank" class="dd-btn secondary" style="text-decoration:none;">🌐 Visit Website</a>` : ''}
+        <a href="/consultation?hospital=${encodeURIComponent(p.name)}" class="dd-btn secondary" style="text-decoration:none;">📅 Book Consultation</a>
+      </div>
+    `;
+    document.getElementById('detailDrawer').classList.add('open');
+  });
+}
+
+function closeDrawer() { document.getElementById('detailDrawer').classList.remove('open'); }
+
+function setType(el, type) {
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentType = type;
+  markers.forEach(m=>m.setMap(null));
+  markers=[];
+  if (map) {
+    const center = map.getCenter();
+    searchNearby({ lat:center.lat(), lng:center.lng() });
+  }
+}
+
+function filterHospitals() {
+  const q = document.getElementById('hospSearch').value.toLowerCase();
+  const filtered = allPlaces.filter(p => p.name.toLowerCase().includes(q) || (p.vicinity||'').toLowerCase().includes(q));
+  renderList(filtered);
+}
+</script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&libraries=places&callback=initMap">
+</script>
+
+{% else %}
+<script>
+// No API key — show mock data
+function showMockHospitals() {
+  const hospitals = [
+    { name:"City General Hospital", addr:"Sector 12, Near Bus Stand", open:true, rating:4.2, dist:"0.8 km" },
+    { name:"Apollo Clinic", addr:"Mall Road, Civil Lines", open:true, rating:4.5, dist:"1.2 km" },
+    { name:"Max Healthcare", addr:"GT Road, Industrial Area", open:false, rating:4.1, dist:"2.1 km" },
+    { name:"Fortis Hospital", addr:"Pakhowal Road", open:true, rating:4.4, dist:"3.0 km" },
+    { name:"Civil Hospital", addr:"Ferozepur Road", open:true, rating:3.9, dist:"1.5 km" },
+  ];
+  const list = document.getElementById('hospList');
+  list.innerHTML = hospitals.map((h,i)=>`
+    <div class="hosp-item" onclick="showMockDetail(${i})">
+      <div class="hi-name">${h.name}</div>
+      <div class="hi-addr">${h.addr}</div>
+      <div class="hi-meta">
+        <span class="hi-badge ${h.open?'open':'closed'}">${h.open?'● Open':'● Closed'}</span>
+        <span class="hi-badge rating">⭐ ${h.rating}</span>
+        <span class="hi-badge dist">📍 ${h.dist}</span>
+      </div>
+    </div>
+  `).join('');
+
+  const hospitals_data = hospitals;
+  window._mockHospitals = hospitals_data;
+}
+
+function showMockDetail(i) {
+  const h = window._mockHospitals[i];
+  document.querySelectorAll('.hosp-item').forEach((el,idx)=>el.classList.toggle('selected',idx===i));
+  document.getElementById('drawerContent').innerHTML = `
+    <div style="font-size:22px; margin-bottom:4px;">🏥</div>
+    <div class="dd-name">${h.name}</div>
+    <div class="dd-addr">${h.addr}</div>
+    <div class="dd-row">
+      <span class="hi-badge ${h.open?'open':'closed'}">${h.open?'● Open Now':'● Closed'}</span>
+      <span class="hi-badge rating">⭐ ${h.rating}</span>
+    </div>
+    <div class="dd-actions">
+      <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.name)}" target="_blank" class="dd-btn primary" style="text-decoration:none;">🗺 Get Directions (Google Maps)</a>
+      <a href="/consultation?hospital=${encodeURIComponent(h.name)}" class="dd-btn secondary" style="text-decoration:none;">📅 Book Consultation</a>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:16px;">⚠️ Add GOOGLE_MAPS_API_KEY to see live data and real-time hours.</p>
+  `;
+  document.getElementById('detailDrawer').classList.add('open');
+}
+
+window.onload = showMockHospitals;
+function closeDrawer() { document.getElementById('detailDrawer').classList.remove('open'); }
+function setType(el) { document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
+function filterHospitals() {}
+</script>
+{% endif %}
+
+<script>
+document.getElementById('avatarInitial').textContent = "{{ username }}"[0]?.toUpperCase() || 'U';
+</script>
+</body>
+</html>

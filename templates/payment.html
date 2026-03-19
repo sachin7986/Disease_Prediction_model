@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Required</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .payment-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+        h2 { color: #184d47; }
+        .amount { font-size: 32px; margin: 20px 0; color: #333; font-weight: bold; }
+        .btn-pay { background: #184d47; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 18px; cursor: pointer; transition: 0.3s; }
+        .btn-pay:hover { background: #123a35; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div class="payment-card">
+        <h2>Activate Account</h2>
+        <p>Please pay the one-time registration fee to access the Disease Predictor AI.</p>
+        <div class="amount">₹1189</div>
+        <button class="btn-pay" onclick="payment(1189)">Pay Now</button>
+    </div>
+
+    <script>
+    function payment(cost) {
+        var options = {
+            "key": "rzp_test_dRWiKHS7zr2Gki",
+            "amount": cost * 100, 
+            "name": "Disease Predictor AI",
+            "description": "Registration Fee",
+            "handler": function (response) {
+                if (response.razorpay_payment_id) {
+                    sendCartData();
+                }
+            },
+            "theme": { "color": "#184d47" }
+        };
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+    }
+
+    function sendCartData() {
+        fetch('/ConfirmOrder')
+            .then(res => res.text())
+            .then(data => {
+                if (data === 'success') {
+                    window.location.href = '/';
+                } else {
+                    alert('Something went wrong with account activation.');
+                }
+            });
+    }
+    </script>
+</body>
+</html>
