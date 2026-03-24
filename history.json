@@ -256,6 +256,117 @@
       ],
       "top_disease": "Hypertension",
       "confidence": "100.00%"
+    },
+    {
+      "id": "00328d08",
+      "date": "2026-03-20 12:29",
+      "symptoms": [
+        "muscle_pain",
+        "joint_pain",
+        "abdominal_pain"
+      ],
+      "results": [
+        {
+          "disease": "Chikungunya",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "Dengue",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "Typhoid",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Chikungunya",
+      "confidence": "100.00%"
+    },
+    {
+      "id": "c3cef403",
+      "date": "2026-03-23 10:00",
+      "symptoms": [
+        "headache",
+        "dizziness",
+        "blurred_vision"
+      ],
+      "results": [
+        {
+          "disease": "Migraine",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "Hypertension",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "Typhoid",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Migraine",
+      "confidence": "100.00%"
+    },
+    {
+      "id": "e5b6674b",
+      "date": "2026-03-23 13:23",
+      "symptoms": [
+        "fever",
+        "fatigue",
+        "chest_pain",
+        "muscle_pain"
+      ],
+      "results": [
+        {
+          "disease": "Influenza",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "Tuberculosis",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "Typhoid",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Influenza",
+      "confidence": "100.00%"
+    },
+    {
+      "id": "5438c5d5",
+      "date": "2026-03-23 14:10",
+      "symptoms": [
+        "persistent_cough"
+      ],
+      "results": [
+        {
+          "disease": "Tuberculosis",
+          "probability": "100.00%",
+          "prob_float": 100.0
+        },
+        {
+          "disease": "Typhoid",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        },
+        {
+          "disease": "Pneumonia",
+          "probability": "0.00%",
+          "prob_float": 0.0
+        }
+      ],
+      "top_disease": "Tuberculosis",
+      "confidence": "100.00%"
     }
   ],
   "Amita01": [

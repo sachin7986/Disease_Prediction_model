@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict — Doctor Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --indigo:#4F46E5; --indigo-pale:#EEF2FF; --indigo-light:#818CF8;
+  --teal:#0F766E;   --teal-pale:#F0FDFA;
+  --amber:#B45309;  --amber-pale:#FFFBEB;
+  --red:#DC2626;    --red-pale:#FEF2F2;
+  --green:#15803D;  --green-pale:#F0FDF4;
+  --text:#0F172A; --text-muted:#64748B;
+  --border:#E2E8F0; --white:#FFFFFF; --surface:#F8FAFC;
+  --sidebar-w:260px;
+}
+html,body { height:100%; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); }
+.layout { display:flex; height:100vh; overflow:hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:var(--sidebar-w); background:#0F172A;
+  display:flex; flex-direction:column; padding:24px 16px; flex-shrink:0;
+}
+.logo { display:flex; align-items:center; gap:12px; padding:0 8px 24px; border-bottom:1px solid rgba(255,255,255,.1); margin-bottom:20px; }
+.logo-icon { width:38px; height:38px; border-radius:10px; background:var(--indigo); display:flex; align-items:center; justify-content:center; font-size:20px; }
+.logo strong { font-size:15px; font-weight:700; color:white; display:block; }
+.logo span   { font-size:11px; color:#94A3B8; }
+.role-badge  { background:var(--indigo); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; letter-spacing:.3px; }
+
+nav a {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px;
+  text-decoration:none; color:#94A3B8;
+  font-size:13.5px; font-weight:500; margin-bottom:3px;
+  transition:all .18s;
+}
+nav a:hover  { background:rgba(255,255,255,.08); color:white; }
+nav a.active { background:var(--indigo); color:white; }
+nav .nav-section { font-size:10.5px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:.7px; padding:14px 12px 6px; }
+
+.sidebar-footer { margin-top:auto; border-top:1px solid rgba(255,255,255,.08); padding-top:16px; }
+.doc-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.06); }
+.doc-avatar { width:36px; height:36px; border-radius:50%; background:var(--indigo); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px; }
+.doc-info strong { display:block; font-size:13px; font-weight:600; color:white; }
+.doc-info span   { font-size:11px; color:#94A3B8; }
+
+/* ── MAIN ── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar {
+  background:var(--white); border-bottom:1px solid var(--border);
+  padding:16px 32px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.topbar-left h1 { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; }
+.topbar-left p  { font-size:12.5px; color:var(--text-muted); margin-top:1px; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.topbar-badge { background:var(--indigo-pale); color:var(--indigo); font-size:12px; font-weight:600; padding:5px 12px; border-radius:99px; }
+
+/* ── CONTENT ── */
+.content { flex:1; overflow-y:auto; padding:28px 32px; display:flex; flex-direction:column; gap:24px; }
+
+/* ── STAT CARDS ── */
+.stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.stat-card {
+  background:var(--white); border:1px solid var(--border);
+  border-radius:14px; padding:20px 22px;
+  display:flex; flex-direction:column; gap:12px;
+  transition:box-shadow .2s;
+}
+.stat-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.06); }
+.stat-icon-wrap { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+.stat-icon-wrap.purple { background:var(--indigo-pale); }
+.stat-icon-wrap.teal   { background:var(--teal-pale); }
+.stat-icon-wrap.amber  { background:var(--amber-pale); }
+.stat-icon-wrap.green  { background:var(--green-pale); }
+.stat-val  { font-size:28px; font-weight:700; font-family:'Sora',sans-serif; letter-spacing:-1px; color:var(--text); }
+.stat-label{ font-size:12.5px; color:var(--text-muted); margin-top:2px; }
+.stat-trend{ font-size:11.5px; margin-top:4px; }
+.stat-trend.up   { color:var(--green); }
+.stat-trend.warn { color:var(--amber); }
+
+/* ── TWO-COL GRID ── */
+.two-col { display:grid; grid-template-columns:1fr 380px; gap:20px; }
+
+/* ── CARDS ── */
+.card { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:22px; }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.card-title  { font-size:14px; font-weight:700; color:var(--text); }
+.card-action { font-size:12.5px; color:var(--indigo); text-decoration:none; font-weight:500; }
+.card-action:hover { text-decoration:underline; }
+
+/* Disease bar chart */
+.disease-bars { display:flex; flex-direction:column; gap:10px; }
+.disease-row  { }
+.disease-meta { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px; }
+.disease-name { font-weight:600; color:var(--text); }
+.disease-count{ color:var(--text-muted); }
+.bar-bg   { height:7px; background:var(--surface); border-radius:99px; overflow:hidden; }
+.bar-fill { height:100%; background:linear-gradient(90deg,var(--indigo),var(--indigo-light)); border-radius:99px; transition:width 1.2s cubic-bezier(.22,1,.36,1); }
+
+/* Recent patients list */
+.patient-list { display:flex; flex-direction:column; gap:10px; }
+.patient-item {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px; border-radius:10px;
+  border:1px solid var(--border); background:var(--surface);
+  cursor:pointer; transition:all .15s; text-decoration:none;
+}
+.patient-item:hover { background:var(--indigo-pale); border-color:var(--indigo-light); }
+.p-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#4F46E5,#818CF8); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px; flex-shrink:0; }
+.p-name  { font-size:13.5px; font-weight:600; color:var(--text); }
+.p-meta  { font-size:11.5px; color:var(--text-muted); }
+.p-diag  { margin-left:auto; font-size:11px; background:var(--indigo-pale); color:var(--indigo); padding:3px 8px; border-radius:99px; font-weight:600; white-space:nowrap; }
+
+/* Recent activity table */
+.activity-table { width:100%; border-collapse:collapse; font-size:13px; }
+.activity-table th { padding:8px 12px; background:var(--surface); font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); font-weight:700; border-bottom:1px solid var(--border); text-align:left; }
+.activity-table td { padding:11px 12px; border-bottom:1px solid var(--border); }
+.activity-table tr:last-child td { border-bottom:none; }
+.activity-table tr:hover td { background:#F8FAFF; }
+.disease-badge { padding:3px 9px; border-radius:99px; font-size:11.5px; font-weight:600; background:var(--indigo-pale); color:var(--indigo); }
+.conf-high { background:var(--green-pale); color:var(--green); }
+.conf-mid  { background:var(--amber-pale); color:var(--amber); }
+.conf-low  { background:var(--red-pale); color:var(--red); }
+
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ── DARK SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🩺</div>
+    <div>
+      <strong>MediPredict</strong>
+      <span>Admin Panel</span>
+    </div>
+    <span class="role-badge">Doctor</span>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <nav>
+    <a href="/doctor" class="active">📊&nbsp; Dashboard</a>
+    <a href="/doctor/patients">👥&nbsp; All Patients</a>
+  </nav>
+
+  <div class="nav-section">Database</div>
+  <nav>
+    <a href="/doctor/sql">🗄️&nbsp; SQL Explorer</a>
+    <a href="/reports">📈&nbsp; Reports</a>
+  </nav>
+
+  <div class="nav-section">Account</div>
+  <nav>
+    <a href="/settings">⚙️&nbsp; Settings</a>
+    <a href="/logout" style="color:#F87171;">← Sign Out</a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="doc-card">
+      <div class="doc-avatar" id="docInitial">D</div>
+      <div class="doc-info">
+        <strong>Dr. {{ username }}</strong>
+        <span>Administrator</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Good day, Dr. {{ doctor_name }} 👋</h1>
+      <p>Here's an overview of your patient database — <span id="todayDate"></span></p>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-badge">🩺 Doctor View</span>
+      <a href="/doctor/patients" style="padding:9px 18px;background:var(--indigo);color:white;border-radius:9px;font-size:13.5px;font-weight:600;text-decoration:none;">+ View All Patients</a>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STAT CARDS -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon-wrap purple">👥</div>
+        <div>
+          <div class="stat-val">{{ total_patients }}</div>
+          <div class="stat-label">Total Patients</div>
+          <div class="stat-trend up">↑ Active in system</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap teal">🔬</div>
+        <div>
+          <div class="stat-val">{{ total_diagnoses }}</div>
+          <div class="stat-label">Total Diagnoses</div>
+          <div class="stat-trend up">↑ Across all patients</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap amber">📅</div>
+        <div>
+          <div class="stat-val">{{ total_bookings }}</div>
+          <div class="stat-label">Consultations Booked</div>
+          <div class="stat-trend warn">Pending review</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap green">📊</div>
+        <div>
+          <div class="stat-val" id="avgConf">—</div>
+          <div class="stat-label">Avg AI Confidence</div>
+          <div class="stat-trend up">Model accuracy</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TWO-COL: Disease chart + Recent patients -->
+    <div class="two-col">
+
+      <!-- Disease distribution -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Top Diseases Across All Patients</span>
+          <a href="/doctor/sql" class="card-action">Run custom query →</a>
+        </div>
+        <div class="disease-bars" id="diseaseBars">
+          {% set max_count = top_diseases[0].count if top_diseases else 1 %}
+          {% for d in top_diseases %}
+          <div class="disease-row">
+            <div class="disease-meta">
+              <span class="disease-name">{{ d.disease }}</span>
+              <span class="disease-count">{{ d.count }} cases &nbsp;·&nbsp; {{ d.avg_conf }}% avg</span>
+            </div>
+            <div class="bar-bg">
+              <div class="bar-fill" style="width:0%" data-width="{{ (d.count / max_count * 100) | round | int }}%"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Recent patients -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Recently Joined Patients</span>
+          <a href="/doctor/patients" class="card-action">View all →</a>
+        </div>
+        <div class="patient-list">
+          {% for p in recent_patients %}
+          <a class="patient-item" href="/doctor/patients?highlight={{ p.id }}">
+            <div class="p-avatar">{{ (p.first_name or p.username)[0] | upper }}</div>
+            <div>
+              <div class="p-name">{{ p.first_name or '' }} {{ p.last_name or p.username }}</div>
+              <div class="p-meta">Joined {{ p.joined }}</div>
+            </div>
+            <span class="p-diag">{{ p.diag_count }} dx</span>
+          </a>
+          {% endfor %}
+          {% if not recent_patients %}
+          <p style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">No patients yet</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT DIAGNOSES TABLE -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Recent Diagnoses — All Patients</span>
+        <a href="/doctor/sql" class="card-action">Custom query →</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="activity-table">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Disease Predicted</th>
+              <th>Confidence</th>
+              <th>Date & Time</th>
+              <th>Record ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in recent_diagnoses %}
+            {% set conf_num = d.prob_float or 0 %}
+            <tr>
+              <td>
+                <strong>{{ d.user.first_name or d.user.username }}</strong>
+                <br><span style="font-size:11.5px;color:var(--text-muted);">{{ d.user.username }}</span>
+              </td>
+              <td><span class="disease-badge">{{ d.top_disease }}</span></td>
+              <td>
+                <span class="conf-{{ 'high' if conf_num >= 60 else ('mid' if conf_num >= 30 else 'low') }}" style="padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:600;">
+                  {{ d.confidence }}
+                </span>
+              </td>
+              <td style="color:var(--text-muted);">{{ d.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+              <td style="font-family:monospace;font-size:12px;color:var(--text-muted);">#{{ d.record_id }}</td>
+            </tr>
+            {% endfor %}
+            {% if not recent_diagnoses %}
+            <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);">No diagnoses recorded yet</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<script>
+document.getElementById('docInitial').textContent = "{{ username }}"[0]?.toUpperCase() || 'D';
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// Animate bars after load
+setTimeout(() => {
+  document.querySelectorAll('.bar-fill').forEach(el => {
+    el.style.width = el.dataset.width;
+  });
+}, 200);
+
+// Calculate avg confidence from Flask data
+const topDiseases = {{ top_diseases | tojson }};
+if (topDiseases.length) {
+  const avg = topDiseases.reduce((s,d) => s + d.avg_conf, 0) / topDiseases.length;
+  document.getElementById('avgConf').textContent = avg.toFixed(1) + '%';
+}
+</script>
+</body>
+</html>

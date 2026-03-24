@@ -7,7 +7,27 @@
     "email": "",
     "age": "",
     "gender": "",
-    "blood_group": "A+"
+    "blood_group": "A+",
+    "bookings": [
+      {
+        "booking_id": "11BE59F5",
+        "doctor": "Dr. Priya Sharma",
+        "date": "2026-03-20",
+        "time": "9:00 AM",
+        "type": "online",
+        "status": "confirmed",
+        "created_at": "2026-03-20 12:30"
+      },
+      {
+        "booking_id": "DD7F1E13",
+        "doctor": "Dr. Priya Sharma",
+        "date": "2026-03-23",
+        "time": "9:00 AM",
+        "type": "online",
+        "status": "confirmed",
+        "created_at": "2026-03-23 13:24"
+      }
+    ]
   },
   "angel": {
     "password": "123",

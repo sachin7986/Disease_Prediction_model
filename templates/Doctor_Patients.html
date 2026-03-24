@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict — All Patients</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --indigo:#4F46E5; --indigo-pale:#EEF2FF; --indigo-light:#818CF8;
+  --teal-pale:#F0FDFA; --amber:#B45309; --amber-pale:#FFFBEB;
+  --red:#DC2626; --red-pale:#FEF2F2; --green:#15803D; --green-pale:#F0FDF4;
+  --text:#0F172A; --text-muted:#64748B; --border:#E2E8F0;
+  --white:#FFFFFF; --surface:#F8FAFC; --sidebar-w:260px;
+}
+html,body { height:100%; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); }
+.layout { display:flex; height:100vh; overflow:hidden; }
+
+/* SIDEBAR — same dark style */
+.sidebar { width:var(--sidebar-w); background:#0F172A; display:flex; flex-direction:column; padding:24px 16px; flex-shrink:0; }
+.logo { display:flex; align-items:center; gap:12px; padding:0 8px 24px; border-bottom:1px solid rgba(255,255,255,.1); margin-bottom:20px; }
+.logo-icon { width:38px; height:38px; border-radius:10px; background:var(--indigo); display:flex; align-items:center; justify-content:center; font-size:20px; }
+.logo strong { font-size:15px; font-weight:700; color:white; display:block; } .logo span { font-size:11px; color:#94A3B8; }
+.role-badge { background:var(--indigo); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; }
+nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; text-decoration:none; color:#94A3B8; font-size:13.5px; font-weight:500; margin-bottom:3px; transition:all .18s; }
+nav a:hover { background:rgba(255,255,255,.08); color:white; } nav a.active { background:var(--indigo); color:white; }
+.nav-section { font-size:10.5px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:.7px; padding:14px 12px 6px; }
+.sidebar-footer { margin-top:auto; border-top:1px solid rgba(255,255,255,.08); padding-top:16px; }
+.doc-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.06); }
+.doc-avatar { width:36px; height:36px; border-radius:50%; background:var(--indigo); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px; }
+.doc-info strong { display:block; font-size:13px; font-weight:600; color:white; } .doc-info span { font-size:11px; color:#94A3B8; }
+
+/* MAIN */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar h1 { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; }
+.topbar p  { font-size:12.5px; color:var(--text-muted); }
+
+/* CONTENT */
+.content { flex:1; overflow-y:auto; padding:24px 28px; }
+
+/* TOOLBAR */
+.toolbar { display:flex; gap:10px; align-items:center; margin-bottom:18px; flex-wrap:wrap; }
+.search-box { position:relative; flex:1; min-width:220px; }
+.search-box input { width:100%; padding:10px 14px 10px 38px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13.5px; outline:none; transition:border-color .2s; }
+.search-box input:focus { border-color:var(--indigo); box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+.search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:15px; }
+select.filter-sel { padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; font-family:'DM Sans',sans-serif; font-size:13.5px; outline:none; cursor:pointer; background:white; }
+select.filter-sel:focus { border-color:var(--indigo); }
+.toolbar-count { font-size:13px; color:var(--text-muted); margin-left:auto; white-space:nowrap; }
+
+/* PATIENT TABLE */
+.table-wrap { background:var(--white); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+table.pt { width:100%; border-collapse:collapse; font-size:13.5px; }
+table.pt th { padding:11px 16px; background:var(--surface); font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); border-bottom:1.5px solid var(--border); text-align:left; cursor:pointer; user-select:none; white-space:nowrap; }
+table.pt th:hover { color:var(--indigo); }
+table.pt th .sort-arrow { font-size:11px; margin-left:4px; opacity:.5; }
+table.pt td { padding:13px 16px; border-bottom:1px solid var(--border); vertical-align:middle; }
+table.pt tr:last-child td { border-bottom:none; }
+table.pt tr:hover td { background:#F5F7FF; }
+table.pt tr.highlighted td { background:var(--indigo-pale); }
+
+/* Avatar */
+.p-avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#4F46E5,#818CF8); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px; }
+
+/* Badges */
+.badge { padding:3px 10px; border-radius:99px; font-size:11.5px; font-weight:600; display:inline-block; }
+.badge.diag-high { background:var(--green-pale); color:var(--green); }
+.badge.diag-mid  { background:var(--amber-pale); color:var(--amber); }
+.badge.diag-zero { background:var(--surface); color:var(--text-muted); }
+.badge.gender-m  { background:#EFF6FF; color:#1D4ED8; }
+.badge.gender-f  { background:#FDF2F8; color:#9D174D; }
+.badge.gender-o  { background:var(--indigo-pale); color:var(--indigo); }
+
+/* Action buttons */
+.act-btn { padding:5px 12px; border:1.5px solid var(--border); background:white; border-radius:7px; font-size:12px; font-weight:500; cursor:pointer; color:var(--text); transition:all .15s; font-family:'DM Sans',sans-serif; }
+.act-btn:hover { background:var(--indigo-pale); border-color:var(--indigo); color:var(--indigo); }
+.act-btn.danger:hover { background:var(--red-pale); border-color:var(--red); color:var(--red); }
+
+/* Empty state */
+.empty-state { text-align:center; padding:64px 20px; color:var(--text-muted); }
+.empty-state .icon { font-size:44px; margin-bottom:14px; }
+
+/* ── PATIENT DETAIL DRAWER ── */
+.drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:500; display:none; }
+.drawer-overlay.open { display:block; }
+.drawer {
+  position:fixed; right:0; top:0; bottom:0; width:460px;
+  background:white; box-shadow:-6px 0 32px rgba(0,0,0,.1);
+  z-index:501; transform:translateX(100%);
+  transition:transform .28s cubic-bezier(.22,1,.36,1);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.drawer.open { transform:translateX(0); }
+.drawer-header { padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; flex-shrink:0; }
+.drawer-avatar { width:48px; height:48px; border-radius:12px; background:linear-gradient(135deg,#4F46E5,#818CF8); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:18px; }
+.drawer-name  { font-size:17px; font-weight:700; }
+.drawer-sub   { font-size:12.5px; color:var(--text-muted); margin-top:2px; }
+.drawer-close { margin-left:auto; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-muted); padding:4px; }
+.drawer-body  { flex:1; overflow-y:auto; padding:20px 24px; }
+
+.info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.info-item { background:var(--surface); border-radius:8px; padding:10px 12px; }
+.info-label { font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; font-weight:600; }
+.info-val   { font-size:13.5px; font-weight:500; margin-top:3px; }
+
+.section-title { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin:16px 0 10px; }
+.diag-mini { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; border:1px solid var(--border); border-radius:9px; margin-bottom:7px; font-size:13px; }
+.diag-mini-disease { font-weight:600; }
+.diag-mini-conf { font-size:11.5px; padding:2px 8px; border-radius:99px; font-weight:600; }
+.diag-mini-date { font-size:11.5px; color:var(--text-muted); margin-left:auto; }
+
+.loading-msg { text-align:center; padding:40px; color:var(--text-muted); }
+.spin { width:24px; height:24px; border:2.5px solid var(--border); border-top-color:var(--indigo); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 10px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🩺</div><div><strong>MediPredict</strong><span>Admin Panel</span></div><span class="role-badge">Doctor</span></div>
+  <div class="nav-section">Overview</div>
+  <nav>
+    <a href="/doctor">📊&nbsp; Dashboard</a>
+    <a href="/doctor/patients" class="active">👥&nbsp; All Patients</a>
+  </nav>
+  <div class="nav-section">Database</div>
+  <nav>
+    <a href="/doctor/sql">🗄️&nbsp; SQL Explorer</a>
+    <a href="/reports">📈&nbsp; Reports</a>
+  </nav>
+  <div class="nav-section">Account</div>
+  <nav>
+    <a href="/settings">⚙️&nbsp; Settings</a>
+    <a href="/logout" style="color:#F87171;">← Sign Out</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="doc-card">
+      <div class="doc-avatar" id="docInitial">D</div>
+      <div class="doc-info"><strong>Dr. {{ username }}</strong><span>Administrator</span></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div><h1>All Patients 👥</h1><p>Manage and review patient records, diagnoses and bookings</p></div>
+  </div>
+
+  <div class="content">
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search by name, username, email, disease…" oninput="filterTable()">
+      </div>
+      <select class="filter-sel" id="diagFilter" onchange="filterTable()">
+        <option value="all">All patients</option>
+        <option value="active">Has diagnoses</option>
+        <option value="none">No diagnoses</option>
+      </select>
+      <select class="filter-sel" id="sortCol" onchange="filterTable()">
+        <option value="diag_count">Sort: Most Diagnoses</option>
+        <option value="username">Sort: Username A-Z</option>
+        <option value="joined">Sort: Newest Joined</option>
+        <option value="last_diag">Sort: Last Active</option>
+      </select>
+      <span class="toolbar-count" id="rowCount">{{ patients|length }} patients</span>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <table class="pt" id="patientsTable">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Contact</th>
+            <th>Medical Info</th>
+            <th>Diagnoses</th>
+            <th>Last Diagnosis</th>
+            <th>Last Disease</th>
+            <th>Joined</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          {% for p in patients %}
+          <tr class="pt-row {% if request.args.get('highlight')|string == p.id|string %}highlighted{% endif %}"
+              data-username="{{ p.username | lower }}"
+              data-name="{{ (p.first_name or '') ~ ' ' ~ (p.last_name or '') | lower }}"
+              data-email="{{ (p.email or '') | lower }}"
+              data-diag="{{ p.diag_count }}"
+              data-joined="{{ p.joined }}"
+              data-last="{{ p.last_diag }}"
+              data-disease="{{ p.last_disease | lower }}">
+            <td>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div class="p-avatar">{{ (p.first_name or p.username)[0] | upper }}</div>
+                <div>
+                  <div style="font-weight:600;">{{ p.first_name or '' }} {{ p.last_name or '' }}</div>
+                  <div style="font-size:11.5px;color:var(--text-muted);">@{{ p.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--text-muted);font-size:12.5px;">{{ p.email or '—' }}</td>
+            <td>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                {% if p.blood_group %}<span class="badge diag-mid">🩸 {{ p.blood_group }}</span>{% endif %}
+                {% if p.age %}<span class="badge diag-zero">{{ p.age }}y</span>{% endif %}
+                {% if p.gender %}
+                  <span class="badge {{ 'gender-m' if p.gender == 'male' else ('gender-f' if p.gender == 'female' else 'gender-o') }}">{{ p.gender | title }}</span>
+                {% endif %}
+                {% if not p.blood_group and not p.age and not p.gender %}<span style="color:var(--text-muted);font-size:12px;">—</span>{% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="badge {{ 'diag-high' if p.diag_count >= 5 else ('diag-mid' if p.diag_count >= 1 else 'diag-zero') }}">
+                {{ p.diag_count }} dx
+              </span>
+            </td>
+            <td style="font-size:12.5px;color:var(--text-muted);">{{ p.last_diag }}</td>
+            <td>
+              {% if p.last_disease != '—' %}
+              <span style="font-size:12.5px;font-weight:600;color:var(--indigo);">{{ p.last_disease }}</span>
+              {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);">{{ p.joined[:10] if p.joined else '—' }}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <button class="act-btn" onclick="openDrawer('{{ p.id }}', '{{ (p.first_name or p.username) }}', '{{ p.username }}')">👁 View</button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if not patients %}
+      <div class="empty-state">
+        <div class="icon">👥</div>
+        <h3 style="font-size:16px;font-weight:600;margin-bottom:6px;">No patients yet</h3>
+        <p style="font-size:13.5px;">Patients will appear here after they sign up.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</main>
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- PATIENT DETAIL DRAWER -->
+<div class="drawer" id="patientDrawer">
+  <div class="drawer-header">
+    <div class="drawer-avatar" id="drawerAvatar">P</div>
+    <div>
+      <div class="drawer-name" id="drawerName">—</div>
+      <div class="drawer-sub" id="drawerSub">Patient</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody">
+    <div class="loading-msg"><div class="spin"></div>Loading patient data…</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+document.getElementById('docInitial').textContent = "{{ username }}"[0]?.toUpperCase() || 'D';
+
+function filterTable() {
+  const q       = document.getElementById('searchInput').value.toLowerCase();
+  const diagF   = document.getElementById('diagFilter').value;
+  const sortCol = document.getElementById('sortCol').value;
+  const rows    = [...document.querySelectorAll('.pt-row')];
+
+  let visible = rows.filter(row => {
+    const username = row.dataset.username;
+    const name     = row.dataset.name;
+    const email    = row.dataset.email;
+    const disease  = row.dataset.disease;
+    const diag     = parseInt(row.dataset.diag) || 0;
+
+    const matchQ = !q || username.includes(q) || name.includes(q) || email.includes(q) || disease.includes(q);
+    const matchD = diagF === 'all' || (diagF === 'active' && diag > 0) || (diagF === 'none' && diag === 0);
+    return matchQ && matchD;
+  });
+
+  // Sort
+  visible.sort((a, b) => {
+    if (sortCol === 'diag_count') return (parseInt(b.dataset.diag)||0) - (parseInt(a.dataset.diag)||0);
+    if (sortCol === 'username')   return a.dataset.username.localeCompare(b.dataset.username);
+    if (sortCol === 'joined')     return b.dataset.joined.localeCompare(a.dataset.joined);
+    if (sortCol === 'last_diag')  return b.dataset.last.localeCompare(a.dataset.last);
+    return 0;
+  });
+
+  // Hide all, show visible in order
+  rows.forEach(r => r.style.display = 'none');
+  const tbody = document.getElementById('tableBody');
+  visible.forEach(r => { r.style.display = ''; tbody.appendChild(r); });
+
+  document.getElementById('rowCount').textContent = `${visible.length} of {{ patients|length }} patients`;
+}
+
+async function openDrawer(patientId, firstName, username) {
+  document.getElementById('drawerName').textContent = firstName;
+  document.getElementById('drawerSub').textContent  = '@' + username;
+  document.getElementById('drawerAvatar').textContent = firstName[0]?.toUpperCase() || 'P';
+  document.getElementById('drawerBody').innerHTML = '<div class="loading-msg"><div class="spin"></div>Loading…</div>';
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('patientDrawer').classList.add('open');
+
+  try {
+    const resp = await fetch(`/doctor/patient/${patientId}`);
+    const data = await resp.json();
+    renderDrawer(data);
+  } catch(e) {
+    document.getElementById('drawerBody').innerHTML = `<p style="color:red;padding:20px;">Failed to load: ${e.message}</p>`;
+  }
+}
+
+function renderDrawer(data) {
+  const p = data.patient;
+  const records  = data.records || [];
+  const bookings = data.bookings || [];
+
+  const infoItems = [
+    {label:'Email',       val: p.email || '—'},
+    {label:'Age',         val: p.age   || '—'},
+    {label:'Gender',      val: (p.gender || '—')},
+    {label:'Blood Group', val: p.blood_group || '—'},
+    {label:'Height',      val: p.height ? p.height + ' cm' : '—'},
+    {label:'Weight',      val: p.weight ? p.weight + ' kg' : '—'},
+  ];
+
+  const infoHtml = `<div class="info-grid">${infoItems.map(i=>`
+    <div class="info-item">
+      <div class="info-label">${i.label}</div>
+      <div class="info-val">${i.val}</div>
+    </div>`).join('')}</div>`;
+
+  const colors = ['#4F46E5','#0F766E','#B45309'];
+  const recHtml = records.length ? records.map((r, idx) => {
+    const pct = parseFloat(r.confidence);
+    const cls = pct >= 60 ? 'diag-high' : (pct >= 30 ? 'diag-mid' : 'diag-zero');
+    return `<div class="diag-mini">
+      <div>
+        <div class="diag-mini-disease">${r.top_disease}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);">${(r.symptoms||[]).slice(0,3).join(', ')}${r.symptoms?.length > 3 ? '…' : ''}</div>
+      </div>
+      <span class="diag-mini-conf badge ${cls}">${r.confidence}</span>
+      <span class="diag-mini-date">${r.date}</span>
+    </div>`;
+  }).join('') : `<p style="color:var(--text-muted);font-size:13px;">No diagnoses yet</p>`;
+
+  const bookHtml = bookings.length ? bookings.map(b => `
+    <div class="diag-mini">
+      <div><div class="diag-mini-disease">${b.doctor}</div><div style="font-size:11.5px;color:var(--text-muted);">${b.type} · ${b.status}</div></div>
+      <span class="diag-mini-date">${b.date} ${b.time}</span>
+    </div>`).join('') : `<p style="color:var(--text-muted);font-size:13px;">No bookings</p>`;
+
+  const medHtml = (p.conditions || p.allergies || p.medications) ? `
+    <div class="section-title">Medical Notes</div>
+    ${p.conditions  ? `<div class="info-item" style="margin-bottom:8px;"><div class="info-label">Conditions</div><div class="info-val" style="font-size:13px;">${p.conditions}</div></div>` : ''}
+    ${p.allergies   ? `<div class="info-item" style="margin-bottom:8px;"><div class="info-label">Allergies</div><div class="info-val" style="font-size:13px;">${p.allergies}</div></div>` : ''}
+    ${p.medications ? `<div class="info-item" style="margin-bottom:8px;"><div class="info-label">Medications</div><div class="info-val" style="font-size:13px;">${p.medications}</div></div>` : ''}
+  ` : '';
+
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="section-title">Personal Information</div>
+    ${infoHtml}
+    ${medHtml}
+    <div class="section-title">Diagnosis History (${records.length})</div>
+    ${recHtml}
+    <div class="section-title">Bookings (${bookings.length})</div>
+    ${bookHtml}
+  `;
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('patientDrawer').classList.remove('open');
+}
+</script>
+</body>
+</html>

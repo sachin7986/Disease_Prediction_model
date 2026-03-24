@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict — Doctor SQL Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --indigo:#4F46E5; --indigo-pale:#EEF2FF; --indigo-light:#818CF8;
+  --green:#15803D; --green-pale:#F0FDF4;
+  --amber:#B45309; --amber-pale:#FFFBEB;
+  --red:#DC2626; --red-pale:#FEF2F2;
+  --text:#0F172A; --text-muted:#64748B; --border:#E2E8F0;
+  --white:#FFFFFF; --surface:#F8FAFC; --sidebar-w:260px;
+  --mono:'JetBrains Mono',monospace;
+}
+html,body { height:100%; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); }
+.layout { display:flex; height:100vh; overflow:hidden; }
+
+.sidebar { width:var(--sidebar-w); background:#0F172A; display:flex; flex-direction:column; padding:24px 16px; flex-shrink:0; }
+.logo { display:flex; align-items:center; gap:12px; padding:0 8px 24px; border-bottom:1px solid rgba(255,255,255,.1); margin-bottom:20px; }
+.logo-icon { width:38px; height:38px; border-radius:10px; background:var(--indigo); display:flex; align-items:center; justify-content:center; font-size:20px; }
+.logo strong { font-size:15px; font-weight:700; color:white; display:block; } .logo span { font-size:11px; color:#94A3B8; }
+.role-badge { background:var(--indigo); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:99px; }
+nav a { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; text-decoration:none; color:#94A3B8; font-size:13.5px; font-weight:500; margin-bottom:3px; transition:all .18s; }
+nav a:hover { background:rgba(255,255,255,.08); color:white; } nav a.active { background:var(--indigo); color:white; }
+.nav-section { font-size:10.5px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:.7px; padding:14px 12px 6px; }
+.sidebar-footer { margin-top:auto; border-top:1px solid rgba(255,255,255,.08); padding-top:16px; }
+.doc-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,.06); }
+.doc-avatar { width:36px; height:36px; border-radius:50%; background:var(--indigo); display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px; }
+.doc-info strong { display:block; font-size:13px; font-weight:600; color:white; } .doc-info span { font-size:11px; color:#94A3B8; }
+
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar { background:var(--white); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.topbar h1 { font-family:'Sora',sans-serif; font-size:18px; font-weight:700; }
+.topbar p  { font-size:12.5px; color:var(--text-muted); }
+
+.explorer { flex:1; display:grid; grid-template-columns:270px 1fr; overflow:hidden; }
+
+/* SCHEMA PANEL */
+.schema-panel { background:var(--white); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+.schema-header { padding:14px 16px; border-bottom:1px solid var(--border); }
+.schema-title  { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+.schema-body   { overflow-y:auto; flex:1; padding:8px; }
+
+.table-block { margin-bottom:6px; }
+.table-name { display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text); transition:background .15s; }
+.table-name:hover { background:var(--surface); }
+.col-list { padding:0 8px 4px 30px; }
+.col-item { display:flex; align-items:center; gap:5px; padding:3px 4px; font-size:12px; color:var(--text-muted); }
+.col-type { font-family:var(--mono); font-size:10px; background:var(--surface); color:var(--text-muted); padding:1px 5px; border-radius:4px; border:1px solid var(--border); }
+.col-pk   { font-size:10px; background:var(--amber-pale); color:var(--amber); padding:1px 5px; border-radius:4px; font-weight:700; }
+.col-fk   { font-size:10px; background:var(--indigo-pale); color:var(--indigo); padding:1px 5px; border-radius:4px; font-weight:700; }
+
+/* QUERY PANEL */
+.query-panel { display:flex; flex-direction:column; overflow:hidden; }
+.template-bar { padding:10px 16px; border-bottom:1px solid var(--border); background:var(--white); display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.tpl-label { font-size:11.5px; font-weight:700; color:var(--text-muted); white-space:nowrap; }
+.tpl-btn { padding:5px 11px; border-radius:6px; border:1px solid var(--border); background:white; font-size:11.5px; font-weight:500; cursor:pointer; color:var(--text); font-family:'DM Sans',sans-serif; transition:all .15s; white-space:nowrap; }
+.tpl-btn:hover { background:var(--indigo-pale); border-color:var(--indigo); color:var(--indigo); }
+.tpl-btn.write { border-color:#D1FAE5; color:var(--green); background:#F0FDF4; }
+.tpl-btn.write:hover { background:#DCFCE7; border-color:var(--green); }
+
+.editor-area { padding:16px; border-bottom:1px solid var(--border); background:var(--white); flex-shrink:0; }
+.editor-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.editor-label { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+
+textarea#queryInput {
+  width:100%; height:140px; font-family:var(--mono); font-size:13px;
+  border:1.5px solid var(--border); border-radius:10px;
+  padding:12px 14px; resize:none; outline:none; color:var(--text);
+  background:#FAFBFC; line-height:1.65;
+  transition:border-color .2s, box-shadow .2s;
+}
+textarea#queryInput:focus { border-color:var(--indigo); box-shadow:0 0 0 3px rgba(79,70,229,.1); background:white; }
+
+.btn-run {
+  padding:9px 20px; background:var(--indigo); color:white; border:none;
+  border-radius:8px; font-family:'DM Sans',sans-serif; font-size:13.5px;
+  font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px;
+  transition:background .15s, transform .1s;
+}
+.btn-run:hover  { background:#4338CA; }
+.btn-run:active { transform:translateY(1px); }
+.btn-run:disabled { opacity:.6; cursor:not-allowed; }
+.btn-clear { padding:9px 14px; border:1px solid var(--border); background:white; border-radius:8px; font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; color:var(--text-muted); transition:all .15s; }
+.btn-clear:hover { border-color:#ccc; color:var(--text); }
+
+.results-area { flex:1; overflow:auto; padding:16px; background:var(--surface); }
+.status-bar { display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:8px 14px; border-radius:8px; font-size:12.5px; font-weight:500; }
+.status-bar.success { background:var(--green-pale); color:var(--green); }
+.status-bar.error   { background:var(--red-pale); color:var(--red); }
+.status-bar.info    { background:var(--indigo-pale); color:var(--indigo); }
+.status-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+.status-time { margin-left:auto; font-weight:400; opacity:.7; }
+
+.result-table-wrap { overflow-x:auto; border-radius:10px; border:1px solid var(--border); }
+table.rt { width:100%; border-collapse:collapse; font-size:13px; background:white; }
+table.rt th { padding:10px 14px; background:var(--surface); border-bottom:1.5px solid var(--border); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); text-align:left; white-space:nowrap; }
+table.rt td { padding:10px 14px; border-bottom:1px solid var(--border); font-family:var(--mono); font-size:12.5px; white-space:nowrap; }
+table.rt tr:last-child td { border-bottom:none; }
+table.rt tr:hover td { background:#F5F7FF; }
+table.rt td.null-val { color:var(--text-muted); font-style:italic; }
+table.rt td.num-val  { color:var(--indigo); text-align:right; }
+table.rt td.write-op { color:var(--green); font-weight:500; font-family:'DM Sans',sans-serif; }
+
+.state-box { text-align:center; padding:60px 20px; color:var(--text-muted); }
+.error-detail { font-family:var(--mono); font-size:12px; margin-top:10px; background:var(--red-pale); color:var(--red); padding:10px 14px; border-radius:8px; text-align:left; }
+.export-row { display:flex; gap:8px; margin-top:12px; }
+.export-btn { padding:7px 14px; border:1px solid var(--border); background:white; border-radius:8px; font-size:12.5px; font-weight:500; cursor:pointer; color:var(--text); font-family:'DM Sans',sans-serif; transition:all .15s; }
+.export-btn:hover { background:var(--green-pale); border-color:var(--green); color:var(--green); }
+
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; }
+::-webkit-scrollbar { width:5px; height:5px; } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:99px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="logo"><div class="logo-icon">🩺</div><div><strong>MediPredict</strong><span>Admin Panel</span></div><span class="role-badge">Doctor</span></div>
+  <div class="nav-section">Overview</div>
+  <nav>
+    <a href="/doctor">📊&nbsp; Dashboard</a>
+    <a href="/doctor/patients">👥&nbsp; All Patients</a>
+  </nav>
+  <div class="nav-section">Database</div>
+  <nav>
+    <a href="/doctor/sql" class="active">🗄️&nbsp; SQL Explorer</a>
+    <a href="/reports">📈&nbsp; Reports</a>
+  </nav>
+  <div class="nav-section">Account</div>
+  <nav>
+    <a href="/settings">⚙️&nbsp; Settings</a>
+    <a href="/logout" style="color:#F87171;">← Sign Out</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="doc-card"><div class="doc-avatar" id="docInitial">D</div><div class="doc-info"><strong>Dr. {{ username }}</strong><span>Administrator</span></div></div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1>SQL Explorer 🗄️</h1>
+      <p>Doctor-level access: SELECT + INSERT/UPDATE on patient records</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="font-size:12.5px;font-weight:600;color:var(--green);background:var(--green-pale);padding:4px 12px;border-radius:99px;">Doctor Access</span>
+      <span style="font-size:12px;color:var(--text-muted);">medipredict.db</span>
+    </div>
+  </div>
+
+  <div class="explorer">
+
+    <!-- SCHEMA PANEL -->
+    <div class="schema-panel">
+      <div class="schema-header"><div class="schema-title">📂 Database Schema</div></div>
+      <div class="schema-body">
+
+        <div class="table-block">
+          <div class="table-name" onclick="toggleCols('u-c')">👤 users</div>
+          <div class="col-list" id="u-c" style="display:none;">
+            <div class="col-item"><span class="col-pk">PK</span>id<span class="col-type">INT</span></div>
+            <div class="col-item">username<span class="col-type">TEXT</span></div>
+            <div class="col-item">email<span class="col-type">TEXT</span></div>
+            <div class="col-item">first_name<span class="col-type">TEXT</span></div>
+            <div class="col-item">last_name<span class="col-type">TEXT</span></div>
+            <div class="col-item">role<span class="col-type">TEXT</span></div>
+            <div class="col-item">age<span class="col-type">TEXT</span></div>
+            <div class="col-item">gender<span class="col-type">TEXT</span></div>
+            <div class="col-item">blood_group<span class="col-type">TEXT</span></div>
+            <div class="col-item">conditions<span class="col-type">TEXT</span></div>
+            <div class="col-item">medications<span class="col-type">TEXT</span></div>
+            <div class="col-item">joined<span class="col-type">DATETIME</span></div>
+          </div>
+        </div>
+
+        <div class="table-block">
+          <div class="table-name" onclick="toggleCols('d-c')">🔬 diagnoses</div>
+          <div class="col-list" id="d-c" style="display:none;">
+            <div class="col-item"><span class="col-pk">PK</span>id<span class="col-type">INT</span></div>
+            <div class="col-item">record_id<span class="col-type">TEXT</span></div>
+            <div class="col-item"><span class="col-fk">FK</span>user_id<span class="col-type">INT</span></div>
+            <div class="col-item">top_disease<span class="col-type">TEXT</span></div>
+            <div class="col-item">confidence<span class="col-type">TEXT</span></div>
+            <div class="col-item">prob_float<span class="col-type">FLOAT</span></div>
+            <div class="col-item">symptoms<span class="col-type">JSON</span></div>
+            <div class="col-item">results<span class="col-type">JSON</span></div>
+            <div class="col-item">created_at<span class="col-type">DATETIME</span></div>
+          </div>
+        </div>
+
+        <div class="table-block">
+          <div class="table-name" onclick="toggleCols('b-c')">📅 bookings</div>
+          <div class="col-list" id="b-c" style="display:none;">
+            <div class="col-item"><span class="col-pk">PK</span>id<span class="col-type">INT</span></div>
+            <div class="col-item">booking_id<span class="col-type">TEXT</span></div>
+            <div class="col-item"><span class="col-fk">FK</span>user_id<span class="col-type">INT</span></div>
+            <div class="col-item">doctor<span class="col-type">TEXT</span></div>
+            <div class="col-item">date<span class="col-type">TEXT</span></div>
+            <div class="col-item">time<span class="col-type">TEXT</span></div>
+            <div class="col-item">type<span class="col-type">TEXT</span></div>
+            <div class="col-item">status<span class="col-type">TEXT</span></div>
+            <div class="col-item">reason<span class="col-type">TEXT</span></div>
+          </div>
+        </div>
+
+        <!-- Quick queries section -->
+        <div style="margin-top:16px;padding:12px 4px 4px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Quick Access</div>
+          <div class="tpl-btn" style="display:block;margin-bottom:5px;" onclick="setQ('SELECT u.username, u.email, COUNT(d.id) as dx FROM users u LEFT JOIN diagnoses d ON u.id=d.user_id WHERE u.role=\\'patient\\' GROUP BY u.id ORDER BY dx DESC;')">All patients + dx count</div>
+          <div class="tpl-btn" style="display:block;margin-bottom:5px;" onclick="setQ('SELECT * FROM diagnoses ORDER BY created_at DESC LIMIT 20;')">Latest diagnoses</div>
+          <div class="tpl-btn" style="display:block;margin-bottom:5px;" onclick="setQ('SELECT * FROM bookings WHERE status=\\'confirmed\\' ORDER BY date;')">Confirmed bookings</div>
+          <div class="tpl-btn write" style="display:block;margin-bottom:5px;" onclick="setQ('UPDATE bookings SET status=\\'completed\\' WHERE booking_id=\\'BOOKING_ID_HERE\\';')">Mark booking done</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUERY PANEL -->
+    <div class="query-panel">
+      <!-- Template bar -->
+      <div class="template-bar">
+        <span class="tpl-label">Templates:</span>
+        <button class="tpl-btn" onclick="loadTpl('select_all')">All patients</button>
+        <button class="tpl-btn" onclick="loadTpl('join_full')">Patient + diagnoses</button>
+        <button class="tpl-btn" onclick="loadTpl('disease_stats')">Disease stats</button>
+        <button class="tpl-btn" onclick="loadTpl('top_patients')">Top patients</button>
+        <button class="tpl-btn" onclick="loadTpl('monthly')">Monthly trend</button>
+        <button class="tpl-btn" onclick="loadTpl('bookings_full')">All bookings</button>
+        <button class="tpl-btn write" onclick="loadTpl('update_booking')">Update status</button>
+        <button class="tpl-btn write" onclick="loadTpl('update_patient')">Update patient</button>
+      </div>
+
+      <!-- Editor -->
+      <div class="editor-area">
+        <div class="editor-header">
+          <span class="editor-label">SQL Query</span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-clear" onclick="clearQ()">Clear</button>
+            <button class="btn-run" id="runBtn" onclick="runQ()">
+              <span id="runText">▶ Execute</span>
+              <div class="spinner" id="runSpin" style="display:none;"></div>
+            </button>
+          </div>
+        </div>
+        <textarea id="queryInput" spellcheck="false"
+          placeholder="-- Doctor-level SQL access
+-- SELECT queries return a results table
+-- UPDATE / INSERT queries show rows affected
+-- DROP, ALTER, TRUNCATE are blocked for safety
+
+SELECT u.username, u.first_name, u.last_name,
+       COUNT(d.id) AS total_diagnoses,
+       ROUND(AVG(d.prob_float), 2) AS avg_confidence
+FROM users u
+LEFT JOIN diagnoses d ON u.id = d.user_id
+WHERE u.role = 'patient'
+GROUP BY u.id
+ORDER BY total_diagnoses DESC;"
+          onkeydown="handleKey(event)"></textarea>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span style="font-size:11.5px;color:var(--text-muted);"><kbd style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:11px;">Ctrl+Enter</kbd> to run</span>
+          <span style="font-size:11.5px;color:var(--text-muted);">Doctor access: SELECT + INSERT + UPDATE · DROP/ALTER blocked</span>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results-area" id="resultsArea">
+        <div class="state-box">
+          <div style="font-size:36px;margin-bottom:12px;">🗄️</div>
+          <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;">Doctor SQL Console</div>
+          <div style="font-size:13.5px;">Run SELECT queries or UPDATE patient records. Results appear here.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+</div>
+
+<script>
+document.getElementById('docInitial').textContent = "{{ username }}"[0]?.toUpperCase() || 'D';
+
+const TEMPLATES = {
+  select_all: `SELECT
+  u.id,
+  u.username,
+  u.first_name || ' ' || COALESCE(u.last_name, '') AS full_name,
+  u.email,
+  u.age,
+  u.gender,
+  u.blood_group,
+  u.joined
+FROM users u
+WHERE u.role = 'patient'
+ORDER BY u.joined DESC;`,
+
+  join_full: `SELECT
+  u.username,
+  u.first_name,
+  d.top_disease,
+  d.confidence,
+  d.prob_float,
+  d.created_at AS diagnosis_date,
+  d.record_id
+FROM users u
+INNER JOIN diagnoses d ON u.id = d.user_id
+ORDER BY d.created_at DESC
+LIMIT 50;`,
+
+  disease_stats: `SELECT
+  top_disease                          AS disease,
+  COUNT(*)                             AS total_cases,
+  COUNT(DISTINCT user_id)              AS unique_patients,
+  ROUND(AVG(prob_float), 2)            AS avg_confidence,
+  ROUND(MAX(prob_float), 2)            AS max_confidence,
+  ROUND(MIN(prob_float), 2)            AS min_confidence
+FROM diagnoses
+GROUP BY top_disease
+ORDER BY total_cases DESC;`,
+
+  top_patients: `SELECT
+  u.username,
+  u.first_name || ' ' || COALESCE(u.last_name,'') AS name,
+  COUNT(d.id)                    AS total_diagnoses,
+  ROUND(AVG(d.prob_float), 2)    AS avg_confidence,
+  MAX(d.created_at)              AS last_visit,
+  MAX(d.top_disease)             AS last_disease
+FROM users u
+LEFT JOIN diagnoses d ON u.id = d.user_id
+WHERE u.role = 'patient'
+GROUP BY u.id
+ORDER BY total_diagnoses DESC
+LIMIT 20;`,
+
+  monthly: `SELECT
+  strftime('%Y-%m', created_at)   AS month,
+  COUNT(*)                        AS diagnoses,
+  COUNT(DISTINCT user_id)         AS active_patients,
+  ROUND(AVG(prob_float), 2)       AS avg_confidence
+FROM diagnoses
+GROUP BY strftime('%Y-%m', created_at)
+ORDER BY month DESC;`,
+
+  bookings_full: `SELECT
+  b.booking_id,
+  u.username    AS patient,
+  b.doctor,
+  b.date,
+  b.time,
+  b.type,
+  b.status,
+  b.reason,
+  b.created_at
+FROM bookings b
+JOIN users u ON b.user_id = u.id
+ORDER BY b.date DESC, b.time;`,
+
+  update_booking: `-- Change booking status to 'completed'
+-- Replace BOOKING_ID with the actual booking_id value
+UPDATE bookings
+SET status = 'completed'
+WHERE booking_id = 'BOOKING_ID_HERE';`,
+
+  update_patient: `-- Add medical notes for a patient
+-- Replace USERNAME with the patient's username
+UPDATE users
+SET conditions  = 'Type 2 Diabetes',
+    medications = 'Metformin 500mg'
+WHERE username = 'USERNAME_HERE'
+  AND role = 'patient';`,
+};
+
+function loadTpl(key) {
+  document.getElementById('queryInput').value = TEMPLATES[key] || '';
+  document.getElementById('queryInput').focus();
+}
+function setQ(q)   { document.getElementById('queryInput').value = q; }
+function clearQ()  {
+  document.getElementById('queryInput').value = '';
+  document.getElementById('resultsArea').innerHTML = `<div class="state-box"><div style="font-size:32px;margin-bottom:12px;">🗄️</div><div style="font-size:14px;font-weight:600;color:var(--text);">Query cleared</div></div>`;
+}
+function toggleCols(id) { const el=document.getElementById(id); el.style.display=el.style.display==='none'?'':'none'; }
+function handleKey(e) {
+  if ((e.ctrlKey||e.metaKey) && e.key==='Enter') { e.preventDefault(); runQ(); }
+  if (e.key==='Tab') { e.preventDefault(); const t=e.target,s=t.selectionStart; t.value=t.value.substring(0,s)+'  '+t.value.substring(t.selectionEnd); t.selectionStart=t.selectionEnd=s+2; }
+}
+
+async function runQ() {
+  const sql   = document.getElementById('queryInput').value.trim();
+  if (!sql) return;
+  const btn   = document.getElementById('runBtn');
+  const txt   = document.getElementById('runText');
+  const spin  = document.getElementById('runSpin');
+  const area  = document.getElementById('resultsArea');
+
+  btn.disabled=true; txt.style.display='none'; spin.style.display='';
+  const t0 = Date.now();
+
+  try {
+    const resp = await fetch('/api/doctor/sql', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ query: sql }),
+    });
+    const data    = await resp.json();
+    const elapsed = ((Date.now()-t0)/1000).toFixed(2);
+
+    if (!resp.ok || data.error) {
+      area.innerHTML = `
+        <div class="status-bar error"><span class="status-dot"></span>Error — query failed<span class="status-time">${elapsed}s</span></div>
+        <div class="state-box"><div style="font-size:28px;margin-bottom:10px;">❌</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;">Query Error</div><div class="error-detail">${escH(data.error||'Unknown error')}</div></div>`;
+      return;
+    }
+
+    const rows = data.rows || [];
+    const cols = data.columns || [];
+
+    // Handle write operations (UPDATE/INSERT return rowcount)
+    if (data.rowcount !== undefined) {
+      area.innerHTML = `
+        <div class="status-bar success"><span class="status-dot"></span>${data.rowcount} row(s) affected<span class="status-time">${elapsed}s</span></div>
+        <div class="state-box"><div style="font-size:32px;margin-bottom:10px;">✅</div><div style="font-size:14px;font-weight:600;color:var(--text);">Query executed successfully</div><div style="font-size:13px;color:var(--text-muted);margin-top:6px;">${data.rowcount} row(s) were modified in the database.</div></div>`;
+      return;
+    }
+
+    if (!rows.length) {
+      area.innerHTML = `
+        <div class="status-bar info"><span class="status-dot"></span>Query OK — 0 rows<span class="status-time">${elapsed}s</span></div>
+        <div class="state-box"><div style="font-size:32px;margin-bottom:10px;">📭</div><div style="font-size:14px;font-weight:600;color:var(--text);">No rows returned</div></div>`;
+      return;
+    }
+
+    // Detect numeric columns
+    const numCols = new Set();
+    cols.forEach((c,i) => { if (rows.every(r => r[i]===null || typeof r[i]==='number' || !isNaN(r[i]))) numCols.add(i); });
+
+    const hdr = cols.map(c=>`<th>${escH(String(c))}</th>`).join('');
+    const bdy = rows.map(row=>`<tr>${row.map((cell,i)=>{
+      if (cell===null||cell===undefined) return `<td class="null-val">NULL</td>`;
+      if (numCols.has(i)) return `<td class="num-val">${escH(String(cell))}</td>`;
+      return `<td>${escH(String(cell))}</td>`;
+    }).join('')}</tr>`).join('');
+
+    area.innerHTML = `
+      <div class="status-bar success"><span class="status-dot"></span>${rows.length} row${rows.length!==1?'s':''} — ${cols.length} columns<span class="status-time">${elapsed}s</span></div>
+      <div class="result-table-wrap"><table class="rt"><thead><tr>${hdr}</tr></thead><tbody>${bdy}</tbody></table></div>
+      <div class="export-row">
+        <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="export-btn" onclick="copyTable()">📋 Copy</button>
+      </div>`;
+
+    window._lastResult = { columns: cols, rows };
+
+  } catch(err) {
+    area.innerHTML = `<div class="status-bar error"><span class="status-dot"></span>Network error</div><div class="state-box"><div class="error-detail">${escH(err.message)}</div></div>`;
+  } finally {
+    btn.disabled=false; txt.style.display=''; spin.style.display='none';
+  }
+}
+
+function escH(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function exportCSV() {
+  if (!window._lastResult) return;
+  const { columns, rows } = window._lastResult;
+  const lines = [columns.join(',')];
+  rows.forEach(r => lines.push(r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download = 'doctor_query.csv';
+  a.click();
+}
+
+function copyTable() {
+  if (!window._lastResult) return;
+  const { columns, rows } = window._lastResult;
+  const lines = [columns.join('\t')];
+  rows.forEach(r => lines.push(r.map(c=>String(c??'')).join('\t')));
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    const btn = document.querySelector('.export-btn:last-child');
+    btn.textContent='✅ Copied!';
+    setTimeout(()=>btn.textContent='📋 Copy',1500);
+  });
+}
+</script>
+</body>
+</html>
