@@ -228,6 +228,21 @@ def reports_page():
                .order_by(Diagnosis.created_at.desc()).all())
     return render_template("reports.html",
                            username=user.username,
+                           role=user.role,
+                           records=[r.to_dict() for r in records])
+
+
+@app.route("/doctor/reports")
+@doctor_required
+def doctor_reports_page():
+    """Doctor-facing reports — shows system-wide diagnoses summary."""
+    doc     = current_user()
+    records = (Diagnosis.query
+               .order_by(Diagnosis.created_at.desc())
+               .limit(200).all())
+    return render_template("reports.html",
+                           username=doc.username,
+                           role="doctor",
                            records=[r.to_dict() for r in records])
 
 
@@ -670,7 +685,5 @@ def run_sql():
         return jsonify({"error": str(e)}), 400
 
 if __name__ == "__main__":
-    init_db()
-    app.run(host="127.0.0.1", port=5001, debug=True)
     init_db()
     app.run(host="127.0.0.1", port=5001, debug=True)
