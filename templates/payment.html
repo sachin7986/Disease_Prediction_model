@@ -1,54 +1,329 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Payment Required</title>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .payment-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
-        h2 { color: #184d47; }
-        .amount { font-size: 32px; margin: 20px 0; color: #333; font-weight: bold; }
-        .btn-pay { background: #184d47; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 18px; cursor: pointer; transition: 0.3s; }
-        .btn-pay:hover { background: #123a35; transform: scale(1.05); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediPredict AI — Activate Subscription</title>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --indigo:#4F46E5; --indigo-dark:#3730A3; --indigo-pale:#EEF2FF;
+  --green:#15803D;  --green-pale:#F0FDF4;
+  --amber:#B45309;  --amber-pale:#FFFBEB;
+  --red:#DC2626;    --red-pale:#FEF2F2;
+  --text:#0F172A; --text-muted:#64748B;
+  --border:#E2E8F0; --white:#fff; --surface:#F8FAFC;
+}
+html,body { min-height:100%; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--surface); }
+
+/* ── LAYOUT ── */
+.page { display:flex; min-height:100vh; }
+
+/* LEFT — animated medical background */
+.left-side {
+  width:480px; flex-shrink:0;
+  background:linear-gradient(145deg,#1E1B4B 0%,#3730A3 50%,#4F46E5 100%);
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  padding:60px 48px; position:relative; overflow:hidden;
+}
+.left-side::before { content:''; position:absolute; width:500px; height:500px; border-radius:50%; background:rgba(255,255,255,.04); top:-200px; left:-150px; }
+.left-side::after  { content:''; position:absolute; width:350px; height:350px; border-radius:50%; background:rgba(255,255,255,.04); bottom:-100px; right:-80px; }
+
+.brand { position:absolute; top:32px; left:36px; color:white; font-size:18px; font-weight:700; display:flex; align-items:center; gap:10px; }
+.brand-icon { width:32px; height:32px; border-radius:8px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; font-size:17px; }
+
+/* Animated doctor SVG */
+.doc-wrap { margin-bottom:32px; position:relative; z-index:1; }
+@keyframes float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes wave    { 0%,100%{transform:rotate(0deg)} 30%{transform:rotate(22deg)} 70%{transform:rotate(-8deg)} }
+@keyframes pulse   { 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.05)} }
+.doc-svg   { animation:float 3.5s ease-in-out infinite; }
+.doc-hand  { transform-origin:68px 68px; animation:wave 2.2s ease-in-out infinite; }
+.heart-pulse { animation:pulse 1.5s ease-in-out infinite; }
+
+.left-title { font-family:'Sora',sans-serif; font-size:26px; color:white; text-align:center; line-height:1.3; margin-bottom:12px; font-weight:700; position:relative; z-index:1; }
+.left-sub   { font-size:14px; color:rgba(255,255,255,.7); text-align:center; line-height:1.65; max-width:300px; position:relative; z-index:1; }
+
+/* Feature pills */
+.features { display:flex; flex-direction:column; gap:10px; margin-top:28px; width:100%; max-width:320px; position:relative; z-index:1; }
+.feat-item { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:12px; padding:11px 16px; }
+.feat-icon { font-size:20px; }
+.feat-text strong { display:block; font-size:13px; color:white; font-weight:600; }
+.feat-text span   { font-size:11px; color:rgba(255,255,255,.65); }
+
+/* RIGHT — payment form */
+.right-side { flex:1; display:flex; align-items:center; justify-content:center; padding:48px 32px; }
+.pay-card { width:100%; max-width:480px; }
+
+.pay-card h2 { font-family:'Sora',sans-serif; font-size:26px; font-weight:700; margin-bottom:6px; }
+.pay-card .subtitle { color:var(--text-muted); font-size:14px; margin-bottom:32px; }
+
+/* Renewal notice */
+.renewal-notice { background:var(--amber-pale); border:1px solid #FDE68A; border-radius:10px; padding:12px 16px; font-size:13px; color:var(--amber); margin-bottom:20px; }
+
+/* Price card */
+.price-card { background:linear-gradient(135deg,#EEF2FF,#E0E7FF); border:2px solid var(--indigo); border-radius:16px; padding:24px; margin-bottom:24px; display:flex; align-items:center; gap:20px; }
+.price-main { flex:1; }
+.price-badge { background:var(--indigo); color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:99px; text-transform:uppercase; letter-spacing:.4px; display:inline-block; margin-bottom:8px; }
+.price-amount { font-family:'Sora',sans-serif; font-size:40px; font-weight:700; color:var(--indigo-dark); line-height:1; }
+.price-amount sup { font-size:20px; vertical-align:super; margin-right:2px; }
+.price-period { font-size:13px; color:var(--text-muted); margin-top:4px; }
+.price-saving { font-size:12px; color:var(--green); font-weight:600; margin-top:2px; }
+.price-icon { font-size:52px; }
+
+/* What's included */
+.includes { margin-bottom:28px; }
+.includes-title { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; }
+.include-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.include-item { display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--text); }
+.check { width:18px; height:18px; border-radius:50%; background:var(--green-pale); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:10px; color:var(--green); }
+
+/* Pay button */
+.btn-pay { width:100%; padding:16px; background:linear-gradient(135deg,#4F46E5,#3730A3); color:white; border:none; border-radius:12px; font-family:'DM Sans',sans-serif; font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:transform .15s,box-shadow .2s; }
+.btn-pay:hover  { transform:translateY(-1px); box-shadow:0 8px 28px rgba(79,70,229,.4); }
+.btn-pay:active { transform:translateY(1px); }
+
+/* Security note */
+.security-note { text-align:center; font-size:12px; color:var(--text-muted); margin-top:14px; display:flex; align-items:center; justify-content:center; gap:6px; }
+
+/* Loading overlay */
+.loading-overlay { display:none; position:fixed; inset:0; background:rgba(255,255,255,.85); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+.loading-overlay.active { display:flex; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.spinner { width:40px; height:40px; border:4px solid #E2E8F0; border-top-color:var(--indigo); border-radius:50%; animation:spin .8s linear infinite; }
+.loading-text { font-size:15px; font-weight:500; color:var(--text); }
+
+/* Success screen */
+.success-screen { display:none; text-align:center; padding:40px; }
+.success-screen.active { display:block; }
+@keyframes popIn { from{transform:scale(.5);opacity:0} 70%{transform:scale(1.1)} to{transform:scale(1);opacity:1} }
+.success-icon { font-size:72px; animation:popIn .5s ease; display:block; margin:0 auto 20px; }
+.success-title { font-family:'Sora',sans-serif; font-size:24px; font-weight:700; margin-bottom:8px; color:var(--green); }
+.success-sub   { font-size:14px; color:var(--text-muted); margin-bottom:24px; line-height:1.6; }
+.success-id    { background:var(--green-pale); border:1px solid #A7F3D0; border-radius:8px; padding:10px 16px; font-size:13px; color:var(--green); margin-bottom:24px; font-family:monospace; }
+.btn-continue  { display:inline-block; padding:14px 32px; background:var(--green); color:white; border-radius:10px; font-size:15px; font-weight:600; text-decoration:none; transition:background .2s; }
+.btn-continue:hover { background:var(--green-dark,#0E9256); }
+
+@media (max-width:860px) { .left-side{display:none;} }
+</style>
 </head>
 <body>
-    <div class="payment-card">
-        <h2>Activate Account</h2>
-        <p>Please pay the one-time registration fee to access the Disease Predictor AI.</p>
-        <div class="amount">₹1189</div>
-        <button class="btn-pay" onclick="payment(1189)">Pay Now</button>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Processing your payment…</div>
+</div>
+
+<div class="page">
+
+  <!-- ── LEFT — animated panel ── -->
+  <div class="left-side">
+    <div class="brand"><div class="brand-icon">🩺</div> MediPredict AI</div>
+
+    <!-- Animated doctor SVG -->
+    <div class="doc-wrap">
+      <svg class="doc-svg" width="140" height="160" viewBox="0 0 140 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Lab coat body -->
+        <rect x="35" y="80" width="70" height="65" rx="14" fill="white"/>
+        <polygon points="70,84 50,88 44,130" fill="#E0E7FF"/>
+        <polygon points="70,84 90,88 96,130" fill="#E0E7FF"/>
+        <rect x="52" y="86" width="36" height="44" rx="5" fill="#818CF8"/>
+        <!-- Chest pocket -->
+        <rect x="40" y="95" width="14" height="16" rx="3" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1"/>
+        <line x1="46" y1="95" x2="46" y2="90" stroke="#4F46E5" stroke-width="2" stroke-linecap="round"/>
+        <!-- Stethoscope -->
+        <path d="M48 105 Q40 115 40 126 Q40 138 52 138 Q64 138 64 126" fill="none" stroke="#4F46E5" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="52" cy="138" r="6" fill="#4F46E5"/>
+        <circle cx="40" cy="126" r="4" fill="none" stroke="#4F46E5" stroke-width="2.5"/>
+        <!-- Neck -->
+        <rect x="62" y="66" width="16" height="20" rx="7" fill="#FBBF9A"/>
+        <!-- Head -->
+        <ellipse cx="70" cy="50" rx="28" ry="28" fill="#FBBF9A"/>
+        <!-- Hair -->
+        <ellipse cx="70" cy="26" rx="28" ry="12" fill="#1E1B4B"/>
+        <rect x="42" y="26" width="56" height="16" fill="#1E1B4B"/>
+        <!-- Ears -->
+        <ellipse cx="42" cy="50" rx="6" ry="8" fill="#F9A875"/>
+        <ellipse cx="98" cy="50" rx="6" ry="8" fill="#F9A875"/>
+        <!-- Eyes -->
+        <ellipse cx="60" cy="48" rx="6" ry="6.5" fill="white"/>
+        <ellipse cx="80" cy="48" rx="6" ry="6.5" fill="white"/>
+        <circle cx="61.5" cy="49" r="3.5" fill="#1E1B4B"/>
+        <circle cx="81.5" cy="49" r="3.5" fill="#1E1B4B"/>
+        <circle cx="62.5" cy="47.5" r="1.5" fill="white"/>
+        <circle cx="82.5" cy="47.5" r="1.5" fill="white"/>
+        <!-- Smile -->
+        <path d="M60 61 Q70 70 80 61" fill="none" stroke="#C2410C" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Nose -->
+        <ellipse cx="70" cy="56" rx="3" ry="2" fill="#F9A875" opacity=".7"/>
+        <!-- Waving hand -->
+        <g class="doc-hand">
+          <rect x="98" y="85" width="14" height="32" rx="7" fill="#FBBF9A"/>
+          <rect x="95" y="82" width="7" height="16" rx="3.5" fill="#FBBF9A"/>
+          <rect x="103" y="78" width="7" height="18" rx="3.5" fill="#FBBF9A"/>
+          <rect x="111" y="80" width="7" height="17" rx="3.5" fill="#FBBF9A"/>
+          <rect x="119" y="84" width="6" height="14" rx="3" fill="#FBBF9A"/>
+        </g>
+        <!-- Clipboard in other hand -->
+        <rect x="22" y="88" width="18" height="24" rx="3" fill="white"/>
+        <rect x="22" y="88" width="18" height="7" rx="3" fill="#C7D2FE"/>
+        <line x1="25" y1="101" x2="37" y2="101" stroke="#4F46E5" stroke-width="1.5"/>
+        <line x1="25" y1="105" x2="37" y2="105" stroke="#4F46E5" stroke-width="1.5"/>
+        <line x1="25" y1="109" x2="33" y2="109" stroke="#94A3B8" stroke-width="1.5"/>
+        <!-- Pulsing heart on coat -->
+        <text class="heart-pulse" x="62" y="122" font-size="14" text-anchor="middle" fill="#EF4444">♥</text>
+      </svg>
     </div>
 
-    <script>
-    function payment(cost) {
-        var options = {
-            "key": "rzp_test_dRWiKHS7zr2Gki",
-            "amount": cost * 100, 
-            "name": "Disease Predictor AI",
-            "description": "Registration Fee",
-            "handler": function (response) {
-                if (response.razorpay_payment_id) {
-                    sendCartData();
-                }
-            },
-            "theme": { "color": "#184d47" }
-        };
-        var rzp1 = new Razorpay(options);
-        rzp1.open();
-    }
+    <div class="left-title">Unlock Full Access<br>to MediPredict AI</div>
+    <div class="left-sub">Get unlimited AI-powered disease predictions, full diagnosis history, and doctor consultations — all for just ₹599/year.</div>
 
-    function sendCartData() {
-        fetch('/ConfirmOrder')
-            .then(res => res.text())
-            .then(data => {
-                if (data === 'success') {
-                    window.location.href = '/';
-                } else {
-                    alert('Something went wrong with account activation.');
-                }
-            });
+    <div class="features">
+      <div class="feat-item"><div class="feat-icon">🔬</div><div class="feat-text"><strong>Unlimited Diagnoses</strong><span>AI-powered Naive Bayes model</span></div></div>
+      <div class="feat-item"><div class="feat-icon">📋</div><div class="feat-text"><strong>Full History & Reports</strong><span>PDF download for every diagnosis</span></div></div>
+      <div class="feat-item"><div class="feat-icon">📅</div><div class="feat-text"><strong>Doctor Consultations</strong><span>Book online & in-person</span></div></div>
+      <div class="feat-item"><div class="feat-icon">🗺️</div><div class="feat-text"><strong>Hospital Locator</strong><span>Find hospitals near you</span></div></div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT — payment card ── -->
+  <div class="right-side">
+    <div class="pay-card">
+
+      <!-- Main form (hidden after success) -->
+      <div id="payForm">
+        <h2>Activate Your Account</h2>
+        <p class="subtitle">
+          {% if is_renewal %}
+            Renew your annual subscription to continue accessing MediPredict AI.
+          {% else %}
+            One payment unlocks everything for a full year. No auto-renewals.
+          {% endif %}
+        </p>
+
+        {% if is_renewal and expires_at %}
+        <div class="renewal-notice">
+          ⚠️ Your subscription expired on {{ expires_at }}. Renew now to restore access.
+        </div>
+        {% endif %}
+
+        <!-- Price card -->
+        <div class="price-card">
+          <div class="price-main">
+            <span class="price-badge">Annual Plan</span>
+            <div class="price-amount"><sup>₹</sup>{{ amount }}</div>
+            <div class="price-period">per year · billed once</div>
+            <div class="price-saving">✓ Save vs monthly — no hidden fees</div>
+          </div>
+          <div class="price-icon">🏥</div>
+        </div>
+
+        <!-- What's included -->
+        <div class="includes">
+          <div class="includes-title">What's included</div>
+          <div class="include-list">
+            <div class="include-item"><div class="check">✓</div> AI Diagnosis Engine</div>
+            <div class="include-item"><div class="check">✓</div> 365-day access</div>
+            <div class="include-item"><div class="check">✓</div> Diagnosis History</div>
+            <div class="include-item"><div class="check">✓</div> PDF Reports</div>
+            <div class="include-item"><div class="check">✓</div> Book Consultations</div>
+            <div class="include-item"><div class="check">✓</div> Find Hospitals</div>
+            <div class="include-item"><div class="check">✓</div> Health Analytics</div>
+            <div class="include-item"><div class="check">✓</div> Priority Support</div>
+          </div>
+        </div>
+
+        <button class="btn-pay" onclick="startPayment()">
+          <span>🔐</span> Pay ₹{{ amount }} Securely
+        </button>
+
+        <div class="security-note">
+          🔒 Powered by Razorpay · SSL encrypted · 100% secure
+        </div>
+
+        <div style="text-align:center;margin-top:20px;">
+          <a href="/logout" style="font-size:13px;color:#94A3B8;text-decoration:none;">← Sign out</a>
+        </div>
+      </div>
+
+      <!-- Success screen -->
+      <div class="success-screen" id="successScreen">
+        <span class="success-icon">🎉</span>
+        <div class="success-title">Payment Successful!</div>
+        <div class="success-sub">
+          Your MediPredict AI subscription is now active for <strong>365 days</strong>.<br>
+          Welcome to full access!
+        </div>
+        <div class="success-id" id="successPayId">Payment ID: —</div>
+        <a href="/" class="btn-continue">Continue to Dashboard →</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const USER_EMAIL  = "{{ email }}";
+const USER_NAME   = "{{ username }}";
+const AMOUNT      = {{ amount }};
+
+function startPayment() {
+  const options = {
+    key:     "rzp_test_dRWiKHS7zr2Gki",
+    amount:  AMOUNT * 100,          // paise
+    currency:"INR",
+    name:    "MediPredict AI",
+    description: "Annual Subscription — ₹" + AMOUNT,
+    image:   "",
+    prefill: {
+      name:    USER_NAME,
+      email:   USER_EMAIL,
+      contact: "",
+    },
+    notes: {
+      username: USER_NAME,
+      plan:     "annual",
+    },
+    theme: { color: "#4F46E5" },
+    handler: function(response) {
+      const paymentId = response.razorpay_payment_id;
+      if (!paymentId) { alert("Payment failed. Please try again."); return; }
+      document.getElementById('loadingOverlay').classList.add('active');
+      sendConfirmation(paymentId);
+    },
+    modal: {
+      ondismiss: function() {
+        // User closed modal without paying — do nothing
+      }
     }
-    </script>
+  };
+  const rzp = new Razorpay(options);
+  rzp.open();
+}
+
+function sendConfirmation(paymentId) {
+  fetch('/ConfirmOrder?payment_id=' + encodeURIComponent(paymentId))
+    .then(res => res.text())
+    .then(data => {
+      document.getElementById('loadingOverlay').classList.remove('active');
+      if (data === 'success') {
+        document.getElementById('payForm').style.display        = 'none';
+        document.getElementById('successPayId').textContent     = 'Payment ID: ' + paymentId;
+        document.getElementById('successScreen').classList.add('active');
+        // Auto-redirect after 3 seconds
+        setTimeout(() => { window.location.href = '/'; }, 3000);
+      } else {
+        alert('Payment recorded but activation failed. Please contact support with ID: ' + paymentId);
+      }
+    })
+    .catch(() => {
+      document.getElementById('loadingOverlay').classList.remove('active');
+      alert('Network error. Your payment may have gone through — please contact support.');
+    });
+}
+</script>
 </body>
 </html>

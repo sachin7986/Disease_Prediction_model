@@ -454,6 +454,41 @@ nav .nav-section { font-size:10.5px; font-weight:700; color:#475569; text-transf
       </div>
     </div>
 
+
+    <!-- ══ SUBSCRIPTION MANAGEMENT PANEL ══ -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">💳 Subscription Management</span>
+        <a href="#" onclick="loadSubTable();return false;" class="card-action">Refresh ↻</a>
+      </div>
+      <!-- Revenue summary row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+        <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:16px;">
+          <div style="font-size:11px;font-weight:700;color:#15803D;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Active</div>
+          <div style="font-size:28px;font-weight:700;font-family:'Sora',sans-serif;color:#15803D;">{{ sub_active }}</div>
+          <div style="font-size:11.5px;color:#4ADE80;">● Subscribed</div>
+        </div>
+        <div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:16px;">
+          <div style="font-size:11px;font-weight:700;color:#B45309;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Expiring Soon</div>
+          <div style="font-size:28px;font-weight:700;font-family:'Sora',sans-serif;color:#B45309;">{{ sub_expiring }}</div>
+          <div style="font-size:11.5px;color:#F59E0B;">⚠ Within 30 days</div>
+        </div>
+        <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:16px;">
+          <div style="font-size:11px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Expired / Unpaid</div>
+          <div style="font-size:28px;font-weight:700;font-family:'Sora',sans-serif;color:#DC2626;">{{ sub_expired }}</div>
+          <div style="font-size:11.5px;color:#F87171;">✗ No access</div>
+        </div>
+        <div style="background:#EEF2FF;border:1px solid #C7D2FE;border-radius:12px;padding:16px;">
+          <div style="font-size:11px;font-weight:700;color:#4F46E5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Total Revenue</div>
+          <div style="font-size:28px;font-weight:700;font-family:'Sora',sans-serif;color:#4F46E5;">₹{{ total_revenue }}</div>
+          <div style="font-size:11.5px;color:#818CF8;">All time</div>
+        </div>
+      </div>
+      <!-- Dynamic patient subscription table -->
+      <div id="subTableWrap" style="overflow-x:auto;border-radius:10px;border:1px solid #E2E8F0;">
+        <div style="text-align:center;padding:24px;color:#64748B;font-size:13.5px;">Loading subscription data…</div>
+      </div>
+    </div>
   </div>
 </main>
 </div>
@@ -489,6 +524,70 @@ if (topDiseases.length) {
   const avg = topDiseases.reduce((s,d) => s + d.avg_conf, 0) / topDiseases.length;
   document.getElementById('avgConf').textContent = avg.toFixed(1) + '%';
 }
+
+// ── Subscription Table ──
+const SUB_LABELS = {
+  active:        {label:'Active',       style:'color:#15803D;background:#F0FDF4;'},
+  expiring_soon: {label:'Expiring Soon',style:'color:#B45309;background:#FFFBEB;'},
+  expired:       {label:'Expired',      style:'color:#DC2626;background:#FEF2F2;'},
+  unpaid:        {label:'Unpaid',       style:'color:#64748B;background:#F1F5F9;'},
+};
+
+async function loadSubTable() {
+  try {
+    const resp = await fetch('/api/doctor/subscriptions');
+    const data = await resp.json();
+    const all  = [...(data.active||[]), ...(data.expiring_soon||[]), ...(data.expired||[]), ...(data.unpaid||[])];
+    const wrap = document.getElementById('subTableWrap');
+    if (!wrap) return;
+    if (!all.length) { wrap.innerHTML='<p style="text-align:center;padding:24px;color:#64748B;font-size:13.5px;">No patients yet.</p>'; return; }
+    const rows = all.map(p => {
+      const s   = SUB_LABELS[p.subscription_status] || SUB_LABELS.unpaid;
+      const exp = p.expires_at || '—';
+      const days= p.days_remaining > 0 ? p.days_remaining + 'd left' : '—';
+      const amt = p.payment_amount ? '₹'+p.payment_amount : '—';
+      return `<tr>
+        <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-weight:600;">${p.first_name||p.username} <span style="font-weight:400;font-size:11.5px;color:#64748B;">@${p.username}</span></td>
+        <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-size:12.5px;">${p.email||'—'}</td>
+        <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;"><span style="padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:600;${s.style}">${s.label}</span></td>
+        <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-size:12.5px;">${exp}</td>
+        <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-size:12.5px;">${days}</td>
+        <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-size:12.5px;">${amt}</td>
+        <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;">
+          <div style="display:flex;gap:5px;">
+            <button onclick="grantAccess(${p.id},'${p.username}')" style="padding:4px 10px;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Grant</button>
+            <button onclick="revokeAccess(${p.id},'${p.username}')" style="padding:4px 10px;border:1px solid #FECACA;background:#FEF2F2;color:#DC2626;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Revoke</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    wrap.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#F8FAFC;">${
+      ['Patient','Email','Status','Expires','Days','Paid','Actions'].map(h=>
+        `<th style="padding:10px 14px;border-bottom:1.5px solid #E2E8F0;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748B;">${h}</th>`
+      ).join('')
+    }</tr></thead><tbody>${rows}</tbody></table>`;
+  } catch(e) {
+    const wrap = document.getElementById('subTableWrap');
+    if (wrap) wrap.innerHTML='<p style="color:#DC2626;padding:20px;font-size:13px;text-align:center;">Failed: '+e.message+'</p>';
+  }
+}
+
+async function grantAccess(id, username) {
+  if (!confirm('Grant 365-day access to @'+username+'?')) return;
+  const r=await fetch('/api/doctor/grant-access/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({days:365})});
+  const d=await r.json();
+  d.expires_at ? (alert('Access granted until '+d.expires_at), loadSubTable()) : alert('Error: '+(d.error||'unknown'));
+}
+
+async function revokeAccess(id, username) {
+  if (!confirm('Revoke access for @'+username+'?')) return;
+  const r=await fetch('/api/doctor/revoke-access/'+id,{method:'POST'});
+  const d=await r.json();
+  d.status==='revoked' ? (alert('Revoked for @'+username), loadSubTable()) : alert('Error: '+(d.error||'unknown'));
+}
+
+loadSubTable();
+
 </script>
 </body>
-</html> 
+</html>

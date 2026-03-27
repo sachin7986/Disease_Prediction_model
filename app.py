@@ -102,6 +102,17 @@ category_map = _build_category_map(symptoms_list)
 def init_db():
     with app.app_context():
         db.create_all()
+        # Add new subscription columns to existing DB if they don't exist (SQLite migration)
+        try:
+            with db.engine.connect() as conn:
+                cols = [row[1] for row in conn.execute(db.text("PRAGMA table_info(users)")).fetchall()]
+                if "paid_at"       not in cols: conn.execute(db.text("ALTER TABLE users ADD COLUMN paid_at DATETIME"))
+                if "expires_at"    not in cols: conn.execute(db.text("ALTER TABLE users ADD COLUMN expires_at DATETIME"))
+                if "payment_id"    not in cols: conn.execute(db.text("ALTER TABLE users ADD COLUMN payment_id VARCHAR(60)"))
+                if "payment_amount" not in cols: conn.execute(db.text("ALTER TABLE users ADD COLUMN payment_amount INTEGER"))
+                conn.commit()
+        except Exception as e:
+            print(f"Migration note: {e}")
         print("Database ready: medipredict.db")
 
 
@@ -113,6 +124,18 @@ def login_required(f):
     def decorated(*args, **kwargs):
         if "user_id" not in session:
             return redirect(url_for("login"))
+        user = current_user()
+        if user and user.role == "patient":
+            # Check subscription — allow /payment and /logout through
+            from flask import request as _req
+            if _req.endpoint not in ("payment_page", "confirm_order", "logout"):
+                if not user.paid:
+                    return redirect(url_for("payment_page"))
+                if user.expires_at and user.expires_at < datetime.datetime.utcnow():
+                    # Subscription expired — mark as unpaid and redirect
+                    user.paid = False
+                    db.session.commit()
+                    return redirect(url_for("payment_page"))
         return f(*args, **kwargs)
     return decorated
 
@@ -166,9 +189,10 @@ def signup():
             return render_template("signup.html", error="Username already taken.")
 
         new_user = User(
-            username=u, password=p,           # hash password in production
+            username=u, password=p,
             first_name=fn, last_name=ln,
-            email=em, role=role, paid=True,
+            email=em, role=role,
+            paid=True if role == "doctor" else False,  # doctors skip payment
             joined=datetime.datetime.utcnow()
         )
         db.session.add(new_user)
@@ -177,9 +201,11 @@ def signup():
         session["user_id"]  = new_user.id
         session["username"] = new_user.username
         session["role"]     = new_user.role
+        # Doctors bypass payment, go straight to their dashboard
         if new_user.role == "doctor":
             return redirect(url_for("doctor_dashboard"))
-        return redirect(url_for("home"))
+        # Patients must pay before accessing the app
+        return redirect(url_for("payment_page"))
     return render_template("signup.html")
 
 
@@ -476,6 +502,112 @@ def migrate_json():
 
 
 # ══════════════════════════════════════════════════════════════
+#  PAYMENT / SUBSCRIPTION ROUTES
+# ══════════════════════════════════════════════════════════════
+
+SUBSCRIPTION_PRICE = 599   # ₹599 per year
+
+@app.route("/payment")
+@login_required
+def payment_page():
+    user = current_user()
+    # Doctors never pay — redirect them away
+    if user.role == "doctor":
+        return redirect(url_for("doctor_dashboard"))
+    # Already paid and not expired — go to app
+    if user.paid and user.expires_at and user.expires_at > datetime.datetime.utcnow():
+        return redirect(url_for("home"))
+    return render_template(
+        "payment.html",
+        username   = user.username,
+        email      = user.email or "",
+        amount     = SUBSCRIPTION_PRICE,
+        is_renewal = (user.paid_at is not None),  # True = renewing, False = first time
+        expires_at = user.expires_at.strftime("%d %b %Y") if user.expires_at else None,
+    )
+
+
+@app.route("/ConfirmOrder")
+@login_required
+def confirm_order():
+    """Called by Razorpay callback after successful payment."""
+    user       = current_user()
+    payment_id = request.args.get("payment_id", "demo_" + str(uuid.uuid4())[:8])
+    user.activate_subscription(payment_id=payment_id, amount=SUBSCRIPTION_PRICE)
+    db.session.commit()
+    return "success"
+
+
+@app.route("/api/subscription-status")
+@login_required
+def subscription_status():
+    user = current_user()
+    return jsonify({
+        "paid":           user.paid,
+        "expires_at":     user.expires_at.strftime("%d %b %Y") if user.expires_at else None,
+        "days_remaining": user.days_remaining,
+        "status":         user.subscription_status,
+    })
+
+
+# ── Doctor-only: get all subscription data for admin panel ──
+@app.route("/api/doctor/subscriptions")
+@doctor_required
+def doctor_subscriptions():
+    from sqlalchemy import func
+    patients = User.query.filter_by(role="patient").order_by(User.joined.desc()).all()
+    now      = datetime.datetime.utcnow()
+    result   = {
+        "active":        [],
+        "expiring_soon": [],
+        "expired":       [],
+        "unpaid":        [],
+        "total_revenue": 0,
+    }
+    for p in patients:
+        d = p.to_dict()
+        status = p.subscription_status
+        result[status].append(d)
+        if p.payment_amount:
+            result["total_revenue"] += p.payment_amount
+    result["summary"] = {
+        "active":        len(result["active"]),
+        "expiring_soon": len(result["expiring_soon"]),
+        "expired":       len(result["expired"]),
+        "unpaid":        len(result["unpaid"]),
+        "total_patients":len(patients),
+        "total_revenue": result["total_revenue"],
+    }
+    return jsonify(result)
+
+
+# ── Doctor manually renews/waives a subscription ──
+@app.route("/api/doctor/grant-access/<int:patient_id>", methods=["POST"])
+@doctor_required
+def grant_access(patient_id):
+    patient = db.session.get(User, patient_id)
+    if not patient or patient.role != "patient":
+        return jsonify({"error": "Patient not found"}), 404
+    days = request.json.get("days", 365)
+    patient.activate_subscription(payment_id="doctor_granted", amount=0)
+    patient.expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=days)
+    db.session.commit()
+    return jsonify({"status": "ok", "expires_at": patient.expires_at.strftime("%d %b %Y")})
+
+
+@app.route("/api/doctor/revoke-access/<int:patient_id>", methods=["POST"])
+@doctor_required
+def revoke_access(patient_id):
+    patient = db.session.get(User, patient_id)
+    if not patient or patient.role != "patient":
+        return jsonify({"error": "Patient not found"}), 404
+    patient.paid       = False
+    patient.expires_at = datetime.datetime.utcnow()
+    db.session.commit()
+    return jsonify({"status": "revoked"})
+
+
+# ══════════════════════════════════════════════════════════════
 #  DOCTOR / ADMIN ROUTES
 # ══════════════════════════════════════════════════════════════
 
@@ -514,6 +646,18 @@ def doctor_dashboard():
         .limit(6).all()
     )
 
+    # Subscription summary for doctor dashboard
+    from sqlalchemy import func as _func
+    now_dt = datetime.datetime.utcnow()
+    sub_active   = User.query.filter(User.role=="patient", User.paid==True,
+                     User.expires_at > now_dt).count()
+    sub_expiring = User.query.filter(User.role=="patient", User.paid==True,
+                     User.expires_at > now_dt,
+                     User.expires_at <= now_dt + datetime.timedelta(days=30)).count()
+    sub_expired  = User.query.filter(User.role=="patient",
+                     (User.paid==False) | (User.expires_at <= now_dt)).count()
+    total_revenue= db.session.query(_func.sum(User.payment_amount))                     .filter(User.role=="patient", User.payment_amount != None).scalar() or 0
+
     return render_template(
         "doctor_dashboard.html",
         doctor_name    = doc.first_name or doc.username,
@@ -524,6 +668,10 @@ def doctor_dashboard():
         top_diseases   = [{"disease": r[0], "count": r[1], "avg_conf": float(r[2] or 0)} for r in top_diseases],
         recent_diagnoses = recent_diagnoses,
         recent_patients  = [p.to_dict() for p in recent_patients],
+        sub_active   = sub_active,
+        sub_expiring = sub_expiring,
+        sub_expired  = sub_expired,
+        total_revenue = total_revenue,
     )
 
 
