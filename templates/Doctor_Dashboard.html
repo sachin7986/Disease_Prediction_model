@@ -412,6 +412,55 @@ nav .nav-section { font-size:10.5px; font-weight:700; color:#475569; text-transf
     </div>
 
     <!-- RECENT DIAGNOSES TABLE -->
+    <!-- ══ PATIENT BOOKINGS ══ -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📅 Patient Bookings</span>
+        <a href="#" onclick="loadBookingsTable();return false;" class="card-action">Refresh ↻</a>
+      </div>
+      <div style="overflow-x:auto;border-radius:10px;border:1px solid #E2E8F0;" id="bookingsTableWrap">
+        <table class="activity-table" id="bookingsTable">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Date &amp; Time</th>
+              <th>Type</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th>Booked On</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in recent_bookings %}
+            <tr>
+              <td>
+                <strong>{{ b.user.first_name or b.user.username }}</strong>
+                <br><span style="font-size:11.5px;color:var(--text-muted);">@{{ b.user.username }}</span>
+              </td>
+              <td style="font-size:13px;font-weight:600;">{{ b.doctor }}</td>
+              <td style="color:var(--text-muted);">{{ b.date }}<br><span style="font-size:11px;">{{ b.time }}</span></td>
+              <td>
+                <span style="padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:600;
+                  {% if b.type == 'online' %}background:#EEF2FF;color:#4F46E5;{% else %}background:#F0FDF4;color:#15803D;{% endif %}">
+                  {% if b.type == 'online' %}💻 Online{% else %}🏥 In-Person{% endif %}
+                </span>
+              </td>
+              <td style="font-size:12.5px;max-width:180px;">{{ b.reason or '—' }}</td>
+              <td>
+                <span style="padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:600;background:#F0FDF4;color:#15803D;">✓ {{ b.status | title }}</span>
+              </td>
+              <td style="font-size:11.5px;color:var(--text-muted);">{{ b.created_at.strftime('%d %b, %H:%M') }}</td>
+            </tr>
+            {% endfor %}
+            {% if not recent_bookings %}
+            <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);">No bookings yet</td></tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header">
         <span class="card-title">Recent Diagnoses — All Patients</span>
@@ -523,6 +572,37 @@ const topDiseases = _docData.topDiseases;
 if (topDiseases.length) {
   const avg = topDiseases.reduce((s,d) => s + d.avg_conf, 0) / topDiseases.length;
   document.getElementById('avgConf').textContent = avg.toFixed(1) + '%';
+}
+
+// ── Bookings Table (live refresh) ──
+async function loadBookingsTable() {
+  try {
+    const resp = await fetch('/api/doctor/bookings');
+    const data = await resp.json();
+    const wrap = document.getElementById('bookingsTableWrap');
+    if (!data.length) {
+      wrap.innerHTML = '<p style="text-align:center;padding:24px;color:#64748B;font-size:13.5px;">No bookings yet.</p>';
+      return;
+    }
+    const rows = data.map(b => `<tr>
+      <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-weight:600;">${b.patient_name} <span style="font-weight:400;font-size:11.5px;color:#64748B;">@${b.patient_user}</span></td>
+      <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-size:13px;font-weight:600;">${b.doctor}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;color:#64748B;">${b.date}<br><span style="font-size:11px;">${b.time}</span></td>
+      <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;">
+        <span style="padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:600;${b.type==='online'?'background:#EEF2FF;color:#4F46E5;':'background:#F0FDF4;color:#15803D;'}">${b.type==='online'?'💻 Online':'🏥 In-Person'}</span>
+      </td>
+      <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-size:12.5px;max-width:180px;">${b.reason||'—'}</td>
+      <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;"><span style="padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:600;background:#F0FDF4;color:#15803D;">✓ ${(b.status||'').replace(/\b\w/g,c=>c.toUpperCase())}</span></td>
+      <td style="padding:11px 14px;border-bottom:1px solid #E2E8F0;font-size:11.5px;color:#64748B;">${b.created_at||'—'}</td>
+    </tr>`).join('');
+    wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#F8FAFC;">${
+      ['Patient','Doctor','Date & Time','Type','Reason','Status','Booked On'].map(h=>
+        `<th style="padding:10px 14px;border-bottom:1.5px solid #E2E8F0;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748B;">${h}</th>`
+      ).join('')
+    }</tr></thead><tbody>${rows}</tbody></table>`;
+  } catch(e) {
+    console.error('Bookings load error', e);
+  }
 }
 
 // ── Subscription Table ──

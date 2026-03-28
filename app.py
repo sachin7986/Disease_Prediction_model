@@ -433,12 +433,27 @@ def download_report(record_id):
 def book_consultation():
     user = current_user()
     data = request.json or {}
+    doctor = data.get("doctor", "General Physician")
+    date   = data.get("date", "")
+    time   = data.get("time", "")
+
+    # ── Duplicate slot check ──────────────────────────────────────
+    existing = Booking.query.filter_by(
+        doctor=doctor, date=date, time=time
+    ).filter(Booking.status != "cancelled").first()
+    if existing:
+        return jsonify({
+            "error": "slot_taken",
+            "message": f"Dr. {doctor.split('.')[-1].strip()} is already booked at {time} on {date}. Please choose a different time slot."
+        }), 409
+    # ─────────────────────────────────────────────────────────────
+
     booking = Booking(
         booking_id = str(uuid.uuid4())[:8].upper(),
         user_id    = user.id,
-        doctor     = data.get("doctor", "General Physician"),
-        date       = data.get("date", ""),
-        time       = data.get("time", ""),
+        doctor     = doctor,
+        date       = date,
+        time       = time,
         type       = data.get("type", "online"),
         reason     = data.get("reason", ""),
         status     = "confirmed",
@@ -646,6 +661,12 @@ def doctor_dashboard():
         .limit(6).all()
     )
 
+    # Recent 10 bookings across all patients
+    recent_bookings = (Booking.query
+        .join(User, Booking.user_id == User.id)
+        .order_by(Booking.created_at.desc())
+        .limit(10).all()
+    )
     # Subscription summary for doctor dashboard
     from sqlalchemy import func as _func
     now_dt = datetime.datetime.utcnow()
@@ -668,6 +689,7 @@ def doctor_dashboard():
         top_diseases   = [{"disease": r[0], "count": r[1], "avg_conf": float(r[2] or 0)} for r in top_diseases],
         recent_diagnoses = recent_diagnoses,
         recent_patients  = [p.to_dict() for p in recent_patients],
+        recent_bookings  = recent_bookings,
         sub_active   = sub_active,
         sub_expiring = sub_expiring,
         sub_expired  = sub_expired,
@@ -726,6 +748,24 @@ def doctor_patient_detail(patient_id):
         "records":  [r.to_dict() for r in records],
         "bookings": [b.to_dict() for b in bookings],
     })
+
+
+@app.route("/api/doctor/bookings")
+@doctor_required
+def doctor_all_bookings():
+    """Return all bookings with patient info for doctor dashboard."""
+    bookings = (Booking.query
+                .join(User, Booking.user_id == User.id)
+                .order_by(Booking.created_at.desc())
+                .limit(200).all())
+    result = []
+    for b in bookings:
+        d = b.to_dict()
+        d["patient_name"]  = b.user.first_name or b.user.username
+        d["patient_user"]  = b.user.username
+        d["created_at"]    = b.created_at.strftime("%Y-%m-%d %H:%M") if b.created_at else ""
+        result.append(d)
+    return jsonify(result)
 
 
 @app.route("/doctor/sql")
