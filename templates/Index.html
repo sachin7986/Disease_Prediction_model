@@ -6,15 +6,6 @@
 <title>MediPredict AI — Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
 
-<!--
-  ══════════════════════════════════════════════════════════════
-  FIX #1 — Jinja2 data injected into a <script type="application/json">
-  block INSTEAD of directly inside <script> JS code.
-  VS Code does NOT lint type="application/json" blocks as JavaScript,
-  so Jinja2 curly-brace expressions no longer cause "SyntaxError" warnings.
-  The JS then reads this block with JSON.parse() — clean and safe.
-  ══════════════════════════════════════════════════════════════
--->
 <script id="flask-data" type="application/json">
 {
   "symptoms":     {{ symptoms | tojson }},
@@ -27,40 +18,83 @@
 </script>
 
 <style>
+/* ════════════════════════════════════════
+   RESET & ROOT VARIABLES
+════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --blue: #0062E6; --blue-light: #3D8EFF; --blue-pale: #EBF3FF;
-  --green: #12B76A; --green-pale: #E6FBF2;
-  --amber: #F59E0B; --red: #EF4444;
-  --text: #0D1B2A; --text-muted: #6B7A8D;
-  --border: #E2E8F0; --white: #FFFFFF; --surface: #F7F9FC;
-  --sidebar-w: 250px;
+  --blue: #0062E6;
+  --blue-light: #3D8EFF;
+  --blue-pale: #EBF3FF;
+  --blue-glow: rgba(0,98,230,0.25);
+  --green: #12B76A;
+  --green-pale: #E6FBF2;
+  --amber: #F59E0B;
+  --red: #EF4444;
+  --red-pale: #FFF0F0;
+  --text: #0D1B2A;
+  --text-muted: #6B7A8D;
+  --border: #E2E8F0;
+  --white: #FFFFFF;
+  --surface: #F7F9FC;
+  --sidebar-w: 252px;
+  --glass-bg: rgba(255,255,255,0.72);
+  --glass-border: rgba(255,255,255,0.55);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
 }
 
-html, body { height: 100%; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--surface); }
+html, body {
+  height: 100%;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text);
+  background: linear-gradient(135deg, #EBF3FF 0%, #F7F9FC 40%, #E6FBF2 100%);
+  background-attachment: fixed;
+}
 
-/* ── LAYOUT ── */
+/* ════════════════════════════════════════
+   LAYOUT
+════════════════════════════════════════ */
 .layout { display: flex; height: 100vh; overflow: hidden; }
 
-/* ── SIDEBAR ── */
+/* ════════════════════════════════════════
+   SIDEBAR — Glassmorphism
+════════════════════════════════════════ */
 .sidebar {
-  width: var(--sidebar-w); background: var(--white);
-  border-right: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  padding: 24px 16px; flex-shrink: 0;
+  width: var(--sidebar-w);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  flex-shrink: 0;
+  box-shadow: 4px 0 24px rgba(0,98,230,0.06);
+  position: relative;
+  z-index: 10;
 }
+
 .logo {
-  display: flex; align-items: center; gap: 10px;
-  padding: 0 8px 24px; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 18px;
 }
 .logo-icon {
-  width: 36px; height: 36px; border-radius: 10px;
+  width: 38px; height: 38px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #0062E6, #3D8EFF);
-  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+  box-shadow: 0 4px 12px rgba(0,98,230,0.35);
 }
 .logo strong { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
-.logo span   { display: block; font-size: 11px; color: var(--text-muted); }
+.logo span { display: block; font-size: 11px; color: var(--text-muted); }
 
 nav a {
   display: flex; align-items: center; gap: 10px;
@@ -69,70 +103,200 @@ nav a {
   font-size: 13.5px; font-weight: 500; margin-bottom: 2px;
   transition: all 0.18s;
 }
-nav a:hover  { background: var(--surface); color: var(--text); }
-nav a.active { background: var(--blue-pale); color: var(--blue); }
+nav a:hover { background: rgba(0,98,230,0.07); color: var(--text); }
+nav a.active {
+  background: linear-gradient(90deg, rgba(0,98,230,0.12), rgba(0,98,230,0.04));
+  color: var(--blue);
+  border-left: 3px solid var(--blue);
+  padding-left: 9px;
+}
 
-.sidebar-footer { margin-top: auto; border-top: 1px solid var(--border); padding-top: 16px; }
+.sidebar-footer { margin-top: auto; border-top: 1px solid var(--border); padding-top: 14px; }
 .user-card {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: 10px; background: var(--surface);
+  padding: 10px 12px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
 }
 .avatar {
   width: 34px; height: 34px; border-radius: 50%;
   background: linear-gradient(135deg, #0062E6, #12B76A);
   display: flex; align-items: center; justify-content: center;
   color: white; font-weight: 700; font-size: 13px;
+  box-shadow: 0 2px 8px rgba(0,98,230,0.3);
 }
 .user-info strong { display: block; font-size: 13px; font-weight: 600; }
-.user-info span   { font-size: 11px; color: var(--text-muted); }
+.user-info span { font-size: 11px; color: var(--text-muted); }
 .user-badge {
-  margin-left: auto; background: var(--green-pale);
-  color: var(--green); font-size: 10px; font-weight: 600;
-  padding: 2px 7px; border-radius: 99px;
+  margin-left: auto;
+  background: linear-gradient(135deg, #12B76A, #0062E6);
+  color: white; font-size: 10px; font-weight: 700;
+  padding: 2px 8px; border-radius: 99px;
 }
 
-/* ── MAIN ── */
+/* ════════════════════════════════════════
+   MAIN
+════════════════════════════════════════ */
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 .topbar {
-  background: var(--white); border-bottom: 1px solid var(--border);
-  padding: 14px 32px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+  padding: 14px 28px;
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+  z-index: 9;
 }
-.topbar h1 { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-.topbar p  { font-size: 12.5px; color: var(--text-muted); }
+.topbar h1 { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.4px; }
+.topbar p { font-size: 12.5px; color: var(--text-muted); }
 .topbar-actions { display: flex; gap: 10px; align-items: center; }
 .icon-btn {
   width: 36px; height: 36px; border-radius: 10px;
-  border: 1px solid var(--border); background: white;
+  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; font-size: 16px; transition: background 0.15s;
+  cursor: pointer; font-size: 16px; transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
 }
-.icon-btn:hover { background: var(--surface); }
+.icon-btn:hover { background: white; box-shadow: var(--shadow-md); transform: translateY(-1px); }
 
-/* CONTENT GRID */
+/* ════════════════════════════════════════
+   RED FLAG BANNER (sticky, high/critical)
+════════════════════════════════════════ */
+.red-flag-banner {
+  display: none;
+  position: sticky; top: 0; z-index: 50;
+  background: linear-gradient(90deg, #7F1D1D, #991B1B);
+  color: white;
+  padding: 10px 20px;
+  font-size: 13px; font-weight: 600;
+  align-items: center; gap: 10px;
+  border-radius: 0;
+  animation: slideDown 0.4s cubic-bezier(.22,1,.36,1);
+  box-shadow: 0 4px 20px rgba(239,68,68,0.4);
+}
+.red-flag-banner.visible { display: flex; }
+@keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.red-flag-banner .flag-pulse {
+  width: 10px; height: 10px; border-radius: 50%; background: #FCA5A5;
+  animation: flagPulse 1s ease infinite;
+  flex-shrink: 0;
+}
+@keyframes flagPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.5);opacity:0.7} }
+.red-flag-dismiss {
+  margin-left: auto; background: rgba(255,255,255,0.15); border: none;
+  color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 600;
+}
+.red-flag-dismiss:hover { background: rgba(255,255,255,0.25); }
+
+/* ════════════════════════════════════════
+   3-COLUMN CONTENT GRID
+════════════════════════════════════════ */
 .content {
-  flex: 1; overflow-y: auto; padding: 28px 32px;
+  flex: 1; overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr 380px;
-  grid-template-rows: auto 1fr;
-  gap: 24px; align-content: start;
+  grid-template-columns: 290px 1fr 320px;
+  gap: 0;
+}
+
+/* ────────────────────────────────────
+   LEFT PANEL
+──────────────────────────────────── */
+.left-panel {
+  border-right: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  padding: 20px 16px 0;
+  gap: 14px;
+  position: relative;
+}
+.left-panel-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 90px; }
+
+/* Floating Analyze Button */
+.analyze-float {
+  position: sticky; bottom: 0;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--border);
+  margin: 0 -16px;
+  padding: 12px 16px 14px;
+  z-index: 5;
+}
+
+/* ────────────────────────────────────
+   CENTER PANEL
+──────────────────────────────────── */
+.center-panel {
+  background: transparent;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex; flex-direction: column;
+  gap: 16px;
 }
 
 /* ── CARDS ── */
-.card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
-.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-.card-title    { font-size: 15px; font-weight: 600; }
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.card-title { font-size: 15px; font-weight: 600; }
 .card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
+/* ════════════════════════════════════════
+   HUMAN BODY MAP
+════════════════════════════════════════ */
+.body-map-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: center;
+}
+.body-map-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--text-muted); margin-bottom: 10px;
+}
+.body-map-svg { width: 100%; max-width: 220px; cursor: pointer; }
+
+/* Body region hover/active states */
+.body-region {
+  transition: opacity 0.2s, filter 0.2s;
+  cursor: pointer;
+}
+.body-region:hover { opacity: 0.75; filter: drop-shadow(0 0 6px rgba(0,98,230,0.5)); }
+.body-region.active { opacity: 1; filter: drop-shadow(0 0 8px rgba(0,98,230,0.7)); }
+
+.body-legend {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 5px; margin-top: 10px;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 4px 7px; border-radius: 6px;
+  cursor: pointer; transition: background 0.15s; color: var(--text-muted);
+}
+.legend-item:hover { background: var(--blue-pale); color: var(--blue); }
+.legend-item.active { background: var(--blue-pale); color: var(--blue); font-weight: 600; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
 /* ── SYMPTOM SEARCH ── */
-.search-wrap { position: relative; margin-bottom: 16px; }
+.search-wrap { position: relative; }
 .search-wrap input {
-  width: 100%; padding: 11px 14px 11px 42px;
+  width: 100%; padding: 10px 14px 10px 40px;
   border: 1.5px solid var(--border); border-radius: 10px;
   font-family: 'DM Sans', sans-serif; font-size: 14px;
-  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none; transition: all 0.2s;
   background: var(--surface);
 }
 .search-wrap input:focus {
@@ -140,130 +304,245 @@ nav a.active { background: var(--blue-pale); color: var(--blue); }
   box-shadow: 0 0 0 3px rgba(0,98,230,0.1);
   background: white;
 }
-.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+.search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 15px; }
 
 .symptom-dropdown {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0;
   background: white; border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.12);
-  max-height: 320px; overflow-y: auto; z-index: 100; display: none;
-  scroll-behavior: smooth;
+  box-shadow: var(--shadow-lg);
+  max-height: 280px; overflow-y: auto; z-index: 100; display: none;
 }
 .symptom-dropdown.open { display: block; }
 .dropdown-item {
-  padding: 10px 16px; cursor: pointer; font-size: 13.5px;
-  display: flex; align-items: center; gap: 8px; transition: background 0.12s;
+  padding: 9px 14px; cursor: pointer; font-size: 13.5px;
+  display: flex; align-items: center; gap: 8px; transition: background 0.1s;
 }
 .dropdown-item:hover { background: var(--blue-pale); color: var(--blue); }
 
 /* Tags */
-.tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; }
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 7px; min-height: 40px; }
 .tag {
   display: flex; align-items: center; gap: 6px;
-  background: var(--blue-pale); color: var(--blue);
-  padding: 5px 10px 5px 12px; border-radius: 99px;
-  font-size: 12.5px; font-weight: 500; animation: tagIn 0.2s ease;
+  background: linear-gradient(135deg, rgba(0,98,230,0.1), rgba(0,98,230,0.06));
+  color: var(--blue); border: 1px solid rgba(0,98,230,0.2);
+  padding: 4px 10px 4px 12px; border-radius: 99px;
+  font-size: 12px; font-weight: 500;
+  animation: tagIn 0.22s cubic-bezier(.22,1,.36,1);
 }
-@keyframes tagIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes tagIn { from { transform: scale(0.7) translateY(4px); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .tag-remove {
   background: none; border: none; color: var(--blue);
-  cursor: pointer; font-size: 14px; line-height: 1; padding: 0; opacity: 0.7;
+  cursor: pointer; font-size: 15px; line-height: 1; padding: 0; opacity: 0.6;
 }
 .tag-remove:hover { opacity: 1; }
 
-/* Category chips */
-.category-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-.chip {
-  padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border);
-  background: white; font-size: 12px; font-weight: 500; cursor: pointer;
-  transition: all 0.15s; color: var(--text-muted);
+/* Stats */
+.stats-stack { display: flex; flex-direction: column; gap: 8px; }
+.stat-row-card {
+  background: white; border: 1px solid var(--border);
+  border-radius: 12px; padding: 11px 13px;
+  display: flex; align-items: center; gap: 11px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, transform 0.15s;
 }
-.chip:hover, .chip.active { background: var(--blue-pale); color: var(--blue); border-color: transparent; }
+.stat-row-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.stat-row-icon { font-size: 20px; flex-shrink: 0; }
+.stat-row-val { font-size: 18px; font-weight: 700; font-family: 'Sora', sans-serif; letter-spacing: -0.5px; }
+.stat-row-lbl { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.panel-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .7px; color: var(--text-muted);
+}
 
-/* Analyze button */
+/* Analyze Button */
 .btn-analyze {
-  width: 100%; padding: 14px;
+  width: 100%; padding: 13px;
   background: linear-gradient(135deg, #0062E6, #3D8EFF);
   color: white; border: none; border-radius: 12px;
   font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600;
-  cursor: pointer; margin-top: 20px;
+  cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: box-shadow 0.2s, transform 0.1s;
+  transition: box-shadow 0.25s, transform 0.1s, background 0.25s;
+  box-shadow: 0 4px 16px rgba(0,98,230,0.2);
+  position: relative; overflow: hidden;
 }
-.btn-analyze:hover { box-shadow: 0 8px 24px rgba(0,98,230,0.35); }
-.btn-analyze:active { transform: translateY(1px); }
-.btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-analyze::after {
+  content: '';
+  position: absolute; inset: -2px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0062E6, #12B76A);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
+}
+.btn-analyze.ready {
+  box-shadow: 0 0 0 3px rgba(0,98,230,0.2), 0 6px 24px rgba(0,98,230,0.4);
+  animation: btnGlow 2s ease infinite;
+}
+@keyframes btnGlow {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(0,98,230,0.2), 0 6px 24px rgba(0,98,230,0.35); }
+  50%       { box-shadow: 0 0 0 6px rgba(0,98,230,0.12), 0 8px 32px rgba(0,98,230,0.5); }
+}
+.btn-analyze:hover:not(:disabled) { box-shadow: 0 8px 28px rgba(0,98,230,0.45); transform: translateY(-1px); }
+.btn-analyze:active:not(:disabled) { transform: translateY(1px); }
+.btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; animation: none; }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .pulsing { animation: pulse 1.2s ease infinite; }
 
-/* ── AI CHAT ── */
-.chat-panel { grid-row: 1 / 3; display: flex; flex-direction: column; gap: 16px; }
-.chat-box {
-  flex: 1; background: var(--white); border: 1px solid var(--border);
-  border-radius: 16px; padding: 20px;
-  display: flex; flex-direction: column; min-height: 0;
+/* ════════════════════════════════════════
+   EMPTY STATE
+════════════════════════════════════════ */
+.center-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 48px 24px;
+  color: var(--text-muted);
 }
-.chat-header {
-  display: flex; align-items: center; gap: 12px;
-  padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+.center-empty .empty-icon { font-size: 60px; margin-bottom: 16px; animation: float 3s ease infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.center-empty h2 { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 9px; }
+.center-empty p { font-size: 13.5px; line-height: 1.65; max-width: 300px; }
+.center-empty .step-list { margin-top: 22px; text-align: left; display: flex; flex-direction: column; gap: 9px; }
+.center-empty .step {
+  display: flex; align-items: center; gap: 12px; font-size: 13px;
+  background: white; border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 14px; box-shadow: var(--shadow-sm);
 }
-.ai-avatar {
-  width: 40px; height: 40px; border-radius: 12px;
-  background: linear-gradient(135deg, #0062E6, #12B76A);
-  display: flex; align-items: center; justify-content: center; font-size: 20px;
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--blue); color: white;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.ai-info strong { display: block; font-size: 14px; font-weight: 600; }
-.ai-info span   { font-size: 11.5px; color: var(--green); }
-.online-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--green);
-  display: inline-block; margin-right: 4px; animation: blink 2s ease infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-.chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px; }
-.msg { display: flex; gap: 10px; max-width: 100%; }
-.msg.user { flex-direction: row-reverse; }
-.msg-bubble {
-  padding: 10px 14px; border-radius: 14px;
-  font-size: 13.5px; line-height: 1.55; max-width: 85%;
+/* ════════════════════════════════════════
+   SEMI-CIRCULAR GAUGE
+════════════════════════════════════════ */
+.gauge-container {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px 20px 8px; margin-bottom: 16px;
 }
-.msg.ai   .msg-bubble { background: var(--surface); border-bottom-left-radius: 4px; }
-.msg.user .msg-bubble { background: var(--blue); color: white; border-bottom-right-radius: 4px; }
-.msg-avatar {
-  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 14px;
+.gauge-svg { width: 220px; height: 130px; overflow: visible; }
+.gauge-track { fill: none; stroke: var(--border); stroke-width: 14; stroke-linecap: round; }
+.gauge-arc   { fill: none; stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1); }
+.gauge-center-text { text-anchor: middle; }
+.certainty-scale {
+  display: flex; gap: 6px; margin-top: 10px; justify-content: center;
 }
-.msg.ai   .msg-avatar { background: var(--blue-pale); }
-.msg.user .msg-avatar { background: var(--green-pale); }
+.certainty-zone {
+  padding: 4px 10px; border-radius: 99px;
+  font-size: 11px; font-weight: 600; opacity: 0.45;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.certainty-zone.active { opacity: 1; transform: scale(1.08); }
+.certainty-zone.zone-low    { background: #F1F5F9; color: #475569; }
+.certainty-zone.zone-medium { background: #FFFBEB; color: #92400E; }
+.certainty-zone.zone-high   { background: #ECFDF5; color: #065F46; }
+.certainty-label {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  margin-top: 6px; text-align: center;
+}
 
-/* ── RESULT CARD ── */
+/* ════════════════════════════════════════
+   DIAGNOSIS RESULT CARD
+════════════════════════════════════════ */
 .result-card { display: none; }
 .result-card.visible { display: block; }
-.diagnosis-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-.diagnosis-icon {
-  width: 48px; height: 48px; border-radius: 14px;
-  background: var(--green-pale); display: flex; align-items: center; justify-content: center; font-size: 24px;
+
+.diagnosis-badge-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
 }
-.diagnosis-name { font-size: 18px; font-weight: 700; font-family: 'Sora', sans-serif; }
-.diagnosis-sub  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-
-.gauge-wrap { margin-bottom: 20px; }
-.gauge-label { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px; }
-.gauge-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
-.gauge-fill {
-  height: 100%; border-radius: 99px;
-  transition: width 1s cubic-bezier(.22,1,.36,1); width: 0%;
+.diagnosis-name-block {
+  padding: 16px 18px;
+  background: linear-gradient(135deg, var(--blue-pale), rgba(18,183,106,0.06));
+  border-radius: 14px;
+  border-left: 5px solid var(--blue);
+  margin-bottom: 16px;
 }
+.diagnosis-name {
+  font-size: 24px; font-weight: 700;
+  font-family: 'Sora', sans-serif; letter-spacing: -0.5px;
+}
+.diagnosis-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-.prob-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-.prob-meta { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; }
-.prob-disease { font-weight: 600; }
-.prob-pct { color: var(--text-muted); }
-.prob-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
-.prob-fill { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(.22,1,.36,1); }
+/* Prob cards (3-column) */
+.prob-row-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 18px;
+}
+.prob-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 13px;
+  position: relative; overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.prob-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.prob-card-rank { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 4px; }
+.prob-card-name { font-size: 12.5px; font-weight: 700; margin-bottom: 6px; line-height: 1.3; }
+.prob-card-pct  { font-size: 16px; font-weight: 700; font-family: 'Sora', sans-serif; }
+.prob-card-bar  { position: absolute; bottom: 0; left: 0; height: 3px; border-radius: 0 0 12px 12px; transition: width 1.2s cubic-bezier(.22,1,.36,1); }
 
-.suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+/* ── CARE GUIDE ── */
+.section-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--text-muted);
+  margin-bottom: 10px; margin-top: 4px;
+}
+.care-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 18px 0 14px; color: var(--text-muted);
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+}
+.care-divider::before, .care-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.crit-badge {
+  padding: 5px 12px; border-radius: 99px;
+  font-size: 11.5px; font-weight: 700; white-space: nowrap;
+}
+.crit-badge.low      { background: #E6FBF2; color: #065F46; }
+.crit-badge.medium   { background: #FFFBEB; color: #92400E; }
+.crit-badge.high     { background: #FFF7ED; color: #9A3412; }
+.crit-badge.critical { background: #FFF0F0; color: #991B1B; }
+
+.dos-donts-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;
+}
+.dos-col {
+  background: linear-gradient(135deg, #F0FDF8, #ECFDF5);
+  border: 1px solid #BBF7D0; border-radius: 14px; padding: 14px;
+}
+.donts-col {
+  background: linear-gradient(135deg, #FFF5F5, #FFF0F0);
+  border: 1px solid #FECACA; border-radius: 14px; padding: 14px;
+}
+.care-col-header {
+  font-size: 12px; font-weight: 800; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 6px;
+  text-transform: uppercase; letter-spacing: .4px;
+}
+.dos-header   { color: #065F46; }
+.donts-header { color: #991B1B; }
+
+.care-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.care-list li {
+  display: flex; align-items: flex-start; gap: 7px;
+  font-size: 12.5px; line-height: 1.45; color: var(--text);
+}
+.care-list li .ci { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+
+.remedies-flex { display: flex; flex-wrap: wrap; gap: 8px; }
+.remedy-pill {
+  background: white; border: 1px solid #D1FAE5;
+  color: #065F46; padding: 6px 13px; border-radius: 99px;
+  font-size: 12px; font-weight: 500;
+  display: flex; align-items: center; gap: 5px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.remedy-pill:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+.suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .suggestion { padding: 6px 13px; border-radius: 99px; font-size: 12px; font-weight: 500; }
 .suggestion.warn { background: #FFF7ED; color: #B45309; }
 .suggestion.info { background: var(--blue-pale); color: var(--blue); }
@@ -271,30 +550,70 @@ nav a.active { background: var(--blue-pale); color: var(--blue); }
 .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .qa-btn {
   padding: 10px 12px; border: 1px solid var(--border);
-  background: white; border-radius: 10px; font-family: 'DM Sans', sans-serif;
-  font-size: 12px; font-weight: 500; cursor: pointer;
-  display: flex; align-items: center; gap: 7px; color: var(--text);
-  transition: all 0.15s; text-decoration: none;
+  background: white; border-radius: 10px;
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; gap: 7px;
+  color: var(--text); transition: all 0.15s; text-decoration: none;
+  box-shadow: var(--shadow-sm);
 }
-.qa-btn:hover { background: var(--blue-pale); border-color: var(--blue-light); color: var(--blue); }
+.qa-btn:hover { background: var(--blue-pale); border-color: var(--blue-light); color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-1px); }
 
 .disclaimer {
-  background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px;
-  padding: 12px 14px; font-size: 12px; color: #92400E; line-height: 1.5;
-  display: flex; gap: 8px; margin-top: 16px;
+  background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px;
+  padding: 12px 14px; font-size: 12px; color: #92400E; line-height: 1.55;
+  display: flex; gap: 8px; margin-top: 14px;
 }
 
-/* Stats */
-.stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-.stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
-.stat-icon { font-size: 22px; margin-bottom: 8px; }
-.stat-val  { font-size: 22px; font-weight: 700; font-family: 'Sora', sans-serif; letter-spacing: -0.5px; }
-.stat-lbl  { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+/* ════════════════════════════════════════
+   AI CHAT PANEL
+════════════════════════════════════════ */
+.chat-panel {
+  border-left: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.chat-box {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 18px;
+}
+.chat-header {
+  display: flex; align-items: center; gap: 12px;
+  padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 14px;
+}
+.ai-avatar {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(135deg, #0062E6, #12B76A);
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  box-shadow: 0 4px 12px rgba(0,98,230,0.3);
+}
+.ai-info strong { display: block; font-size: 14px; font-weight: 600; }
+.ai-info span { font-size: 11.5px; color: var(--green); }
+.online-dot {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+  display: inline-block; margin-right: 4px; animation: blink 2s ease infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+.chat-messages {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+  gap: 10px; padding-right: 4px;
+}
+.msg { display: flex; gap: 9px; max-width: 100%; }
+.msg.user { flex-direction: row-reverse; }
+.msg-bubble {
+  padding: 10px 13px; border-radius: 14px;
+  font-size: 13px; line-height: 1.6; max-width: 87%;
+}
+.msg.ai   .msg-bubble { background: var(--surface); border-bottom-left-radius: 4px; border: 1px solid var(--border); }
+.msg.user .msg-bubble { background: linear-gradient(135deg, #0062E6, #3D8EFF); color: white; border-bottom-right-radius: 4px; }
+.msg-avatar {
+  width: 27px; height: 27px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 13px;
+}
+.msg.ai   .msg-avatar { background: var(--blue-pale); }
+.msg.user .msg-avatar { background: var(--green-pale); }
 
+/* Typing dots */
 .typing-dots span {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
   background: var(--text-muted); margin: 0 2px;
@@ -302,51 +621,57 @@ nav a.active { background: var(--blue-pale); color: var(--blue); }
 }
 .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
 .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 </style>
 </head>
 <body>
 
 <div class="layout">
 
-<!-- ── SIDEBAR ── -->
+<!-- ══════════════════════════════════════
+     SIDEBAR — Glassmorphism
+══════════════════════════════════════ -->
 <aside class="sidebar">
   <div class="logo">
     <div class="logo-icon">🩺</div>
     <div><strong>MediPredict</strong><span>AI Health Assistant</span></div>
   </div>
 
-  <!--
-    FIX #2 — All nav links now point to real Flask routes.
-    Previously every link was href="#" which caused broken navigation.
-  -->
   <nav>
-    <a href="/"            class="active">🏠&nbsp; Dashboard</a>
-    <a href="/"                          >🔍&nbsp; Diagnosis</a>
-    <a href="/history"                   >📋&nbsp; History</a>
-    <a href="/consultation"              >📅&nbsp; Consultation</a>
-    <a href="/hospitals"                 >🗺️&nbsp; Find Hospitals</a>
-    <a href="/reports"                   >📊&nbsp; Reports</a>
-    <a href="/settings"                  >⚙️&nbsp; Settings</a>
+    <a href="/"           class="active">🏠&nbsp; Dashboard</a>
+    <a href="/"                         >🔍&nbsp; Diagnosis</a>
+    <a href="/history"                  >📋&nbsp; History</a>
+    <a href="/consultation"             >📅&nbsp; Consultation</a>
+    <a href="/hospitals"                >🗺️&nbsp; Find Hospitals</a>
+    <a href="/reports"                  >📊&nbsp; Reports</a>
+    <a href="/settings"                 >⚙️&nbsp; Settings</a>
   </nav>
 
   <div class="sidebar-footer">
     <div class="user-card">
-      <div class="avatar"  id="avatarInitial">U</div>
+      <div class="avatar" id="avatarInitial">U</div>
       <div class="user-info">
-        <!-- FIX #10 — username rendered directly by Flask in HTML (not JS) — safe & correct -->
         <strong>{{ username }}</strong>
         <span>Patient</span>
       </div>
       <span class="user-badge">Pro</span>
     </div>
-    <a href="/logout" style="display:block;text-align:center;margin-top:12px;font-size:12.5px;color:#EF4444;text-decoration:none;padding:8px;border-radius:8px;transition:background .15s;"
+    <a href="/logout" style="display:block;text-align:center;margin-top:10px;font-size:12.5px;color:#EF4444;text-decoration:none;padding:8px;border-radius:8px;transition:background .15s;"
        onmouseover="this.style.background='#FFF0F0'" onmouseout="this.style.background='transparent'">← Sign Out</a>
   </div>
 </aside>
 
-<!-- ── MAIN ── -->
+<!-- ══════════════════════════════════════
+     MAIN
+══════════════════════════════════════ -->
 <main class="main">
+
+  <!-- Topbar -->
   <div class="topbar">
     <div>
       <h1>AI Consultation Room 🩺</h1>
@@ -358,124 +683,312 @@ nav a.active { background: var(--blue-pale); color: var(--blue); }
     </div>
   </div>
 
+  <!-- RED FLAG BANNER — sticky, shown for high/critical conditions -->
+  <div class="red-flag-banner" id="redFlagBanner">
+    <div class="flag-pulse"></div>
+    <span id="redFlagText">⚠️ Critical condition detected. Seek immediate medical attention.</span>
+    <button class="red-flag-dismiss" onclick="document.getElementById('redFlagBanner').classList.remove('visible')">Dismiss</button>
+  </div>
+
   <div class="content">
 
-    <!-- LEFT COLUMN -->
-    <div style="display:flex; flex-direction:column; gap:20px;">
+    <!-- ══════════════════════════════════
+         LEFT PANEL — Symptom Selector
+    ══════════════════════════════════ -->
+    <div class="left-panel">
+      <div class="left-panel-scroll">
 
-      <!-- FIX #15 — Stats now use dynamic values from Flask (disease_count, sym_count) -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-icon">🧬</div>
-          <div class="stat-val" id="diseaseCount">—</div>
-          <div class="stat-lbl">Diseases Covered</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🩹</div>
-          <div class="stat-val" id="symCount">—</div>
-          <div class="stat-lbl">Symptoms in Dataset</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">📈</div>
-          <div class="stat-val" id="diagCount">—</div>
-          <div class="stat-lbl">My Diagnoses</div>
-        </div>
-      </div>
-
-      <!-- Symptom Input Card -->
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <div class="card-title">Select Your Symptoms</div>
-            <div class="card-subtitle">Search or browse by category</div>
+        <!-- Stats -->
+        <div class="panel-label">Overview</div>
+        <div class="stats-stack">
+          <div class="stat-row-card">
+            <div class="stat-row-icon">🧬</div>
+            <div>
+              <div class="stat-row-val" id="diseaseCount">—</div>
+              <div class="stat-row-lbl">Diseases Covered</div>
+            </div>
           </div>
-          <span style="font-size:12px; color:var(--text-muted);" id="selCount">0 selected</span>
+          <div class="stat-row-card">
+            <div class="stat-row-icon">🩹</div>
+            <div>
+              <div class="stat-row-val" id="symCount">—</div>
+              <div class="stat-row-lbl">Symptoms in Dataset</div>
+            </div>
+          </div>
+          <div class="stat-row-card">
+            <div class="stat-row-icon">📈</div>
+            <div>
+              <div class="stat-row-val" id="diagCount">—</div>
+              <div class="stat-row-lbl">My Diagnoses</div>
+            </div>
+          </div>
         </div>
 
-        <div class="category-chips">
-          <div class="chip active" onclick="filterCat(this,'all')">🏥 All</div>
-          <div class="chip" onclick="filterCat(this,'general')">🌡️ General</div>
-          <div class="chip" onclick="filterCat(this,'digestive')">🫁 Digestive</div>
-          <div class="chip" onclick="filterCat(this,'neuro')">🧠 Neuro</div>
-          <div class="chip" onclick="filterCat(this,'skin')">🩺 Skin</div>
-          <div class="chip" onclick="filterCat(this,'respiratory')">💨 Respiratory</div>
+        <!-- ── INTERACTIVE BODY MAP ── -->
+        <div class="panel-label" style="margin-top:4px;">Select by Body Region</div>
+        <div class="body-map-wrap">
+          <div class="body-map-title">Tap a region to filter symptoms</div>
+
+          <!-- SVG Body Map -->
+          <svg class="body-map-svg" viewBox="0 0 120 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- HEAD -->
+            <g class="body-region" id="region-head" data-region="head" onclick="selectRegion('head',this)" title="Head & Neurological">
+              <ellipse cx="60" cy="28" rx="22" ry="26" fill="#BFDBFE" stroke="#0062E6" stroke-width="1.5"/>
+              <!-- Face details -->
+              <circle cx="53" cy="26" r="3" fill="#93C5FD" opacity="0.6"/>
+              <circle cx="67" cy="26" r="3" fill="#93C5FD" opacity="0.6"/>
+              <path d="M53 36 Q60 40 67 36" stroke="#0062E6" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+              <text x="60" y="58" text-anchor="middle" font-size="7" fill="#0062E6" font-weight="600">HEAD</text>
+            </g>
+
+            <!-- NECK / THROAT -->
+            <g class="body-region" id="region-throat" data-region="respiratory" onclick="selectRegion('respiratory',this)" title="Throat & Respiratory">
+              <rect x="50" y="52" width="20" height="16" rx="4" fill="#BBF7D0" stroke="#12B76A" stroke-width="1.5"/>
+            </g>
+
+            <!-- CHEST -->
+            <g class="body-region" id="region-chest" data-region="respiratory" onclick="selectRegion('respiratory',this)" title="Chest & Respiratory">
+              <rect x="28" y="68" width="64" height="58" rx="10" fill="#BBF7D0" stroke="#12B76A" stroke-width="1.5"/>
+              <!-- Lungs hint -->
+              <ellipse cx="45" cy="97" rx="10" ry="14" fill="#86EFAC" opacity="0.5"/>
+              <ellipse cx="75" cy="97" rx="10" ry="14" fill="#86EFAC" opacity="0.5"/>
+              <!-- Heart hint -->
+              <path d="M57 88 Q60 84 63 88 Q67 84 70 88 Q70 94 60 100 Q50 94 50 88 Q53 84 57 88Z" fill="#FCA5A5" opacity="0.7"/>
+              <text x="60" y="135" text-anchor="middle" font-size="7" fill="#065F46" font-weight="600">CHEST</text>
+            </g>
+
+            <!-- ABDOMEN -->
+            <g class="body-region" id="region-abdomen" data-region="digestive" onclick="selectRegion('digestive',this)" title="Abdomen & Digestive">
+              <rect x="30" y="128" width="60" height="52" rx="8" fill="#FDE68A" stroke="#F59E0B" stroke-width="1.5"/>
+              <!-- Stomach hint -->
+              <ellipse cx="60" cy="150" rx="14" ry="10" fill="#FCD34D" opacity="0.5"/>
+              <text x="60" y="190" text-anchor="middle" font-size="7" fill="#92400E" font-weight="600">ABDOMEN</text>
+            </g>
+
+            <!-- LEFT ARM -->
+            <g class="body-region" id="region-arm-l" data-region="general" onclick="selectRegion('general',this)" title="General / Body">
+              <rect x="6" y="72" width="20" height="80" rx="8" fill="#E9D5FF" stroke="#7C3AED" stroke-width="1.5" opacity="0.8"/>
+            </g>
+
+            <!-- RIGHT ARM -->
+            <g class="body-region" id="region-arm-r" data-region="general" onclick="selectRegion('general',this)" title="General / Body">
+              <rect x="94" y="72" width="20" height="80" rx="8" fill="#E9D5FF" stroke="#7C3AED" stroke-width="1.5" opacity="0.8"/>
+            </g>
+
+            <!-- LOWER BODY / LEGS -->
+            <g class="body-region" id="region-legs" data-region="general" onclick="selectRegion('general',this)" title="General Symptoms">
+              <rect x="32" y="180" width="24" height="80" rx="8" fill="#C7D2FE" stroke="#4F46E5" stroke-width="1.5"/>
+              <rect x="64" y="180" width="24" height="80" rx="8" fill="#C7D2FE" stroke="#4F46E5" stroke-width="1.5"/>
+              <text x="60" y="275" text-anchor="middle" font-size="7" fill="#3730A3" font-weight="600">LOWER BODY</text>
+            </g>
+
+            <!-- SKIN overlay (invisible, full body) -->
+            <g class="body-region" id="region-skin" data-region="skin" onclick="selectRegion('skin',this)" style="opacity:0; pointer-events:none;" title="Skin">
+              <rect x="0" y="0" width="120" height="280" rx="0" fill="transparent"/>
+            </g>
+          </svg>
+
+          <!-- Legend -->
+          <div class="body-legend">
+            <div class="legend-item" id="legend-head" onclick="selectRegion('head', document.getElementById('region-head'))">
+              <div class="legend-dot" style="background:#3B82F6;"></div> Head/Neuro
+            </div>
+            <div class="legend-item" id="legend-respiratory" onclick="selectRegion('respiratory', document.getElementById('region-chest'))">
+              <div class="legend-dot" style="background:#12B76A;"></div> Chest/Resp.
+            </div>
+            <div class="legend-item" id="legend-digestive" onclick="selectRegion('digestive', document.getElementById('region-abdomen'))">
+              <div class="legend-dot" style="background:#F59E0B;"></div> Digestive
+            </div>
+            <div class="legend-item" id="legend-skin" onclick="selectRegion('skin', null)">
+              <div class="legend-dot" style="background:#EC4899;"></div> Skin
+            </div>
+            <div class="legend-item active" id="legend-all" onclick="selectRegion('all', null)">
+              <div class="legend-dot" style="background:#6B7A8D;"></div> All Symptoms
+            </div>
+            <div class="legend-item" id="legend-general" onclick="selectRegion('general', document.getElementById('region-arm-l'))">
+              <div class="legend-dot" style="background:#7C3AED;"></div> General
+            </div>
+          </div>
         </div>
 
+        <!-- Search -->
+        <div class="panel-label" style="margin-top:2px;">Symptom Search</div>
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
           <input type="text" id="symptomSearch"
-            placeholder="Search symptoms… e.g. headache, fever"
+            placeholder="Search symptoms…"
             autocomplete="off"
             oninput="onSearch(this.value)"
             onfocus="showDropdown()"
             onblur="setTimeout(hideDropdown, 200)">
           <div class="symptom-dropdown" id="symptomDropdown"></div>
         </div>
-        <!-- Quick hint: shows total symptom count and browse prompt -->
-        <div id="symHint" style="font-size:12px; color:var(--text-muted); margin-top:-8px; margin-bottom:8px;">
-          Click the search box to browse all <strong id="totalSymCount">0</strong> symptoms, or type to filter
+        <div id="symHint" style="font-size:11.5px;color:var(--text-muted);margin-top:-4px;">
+          Tap body area above or search from <strong id="totalSymCount">0</strong> symptoms
         </div>
 
-        <div class="tag-cloud" id="tagCloud">
-          <span style="color:var(--text-muted); font-size:13px; align-self:center;">Selected symptoms appear here…</span>
+        <!-- Selected tags -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);">Selected</span>
+            <span style="font-size:11px;color:var(--blue);font-weight:600;" id="selCount">0 symptoms</span>
+          </div>
+          <div class="tag-cloud" id="tagCloud" style="min-height:48px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;">
+            <span style="color:var(--text-muted);font-size:12.5px;align-self:center;">No symptoms selected yet</span>
+          </div>
         </div>
 
+      </div><!-- end left-panel-scroll -->
+
+      <!-- FLOATING ANALYZE BUTTON -->
+      <div class="analyze-float">
         <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()" disabled>
           <span id="btnIcon">⚡</span>
           <span id="btnText">Analyze Symptoms</span>
         </button>
+        <div id="analyzeHint" style="font-size:11px;text-align:center;color:var(--text-muted);margin-top:6px;">
+          Add at least 1 symptom to begin
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         CENTER PANEL — Diagnosis Result
+    ══════════════════════════════════ -->
+    <div class="center-panel">
+
+      <!-- Empty state -->
+      <div class="center-empty" id="emptyState">
+        <div class="empty-icon">🩺</div>
+        <h2>Ready for Diagnosis</h2>
+        <p>Use the body map or search to select symptoms, then click <strong>Analyze</strong> for an AI-powered diagnosis.</p>
+        <div class="step-list">
+          <div class="step"><div class="step-num">1</div><span>Tap a body region or search for symptoms</span></div>
+          <div class="step"><div class="step-num">2</div><span>Select all symptoms you're experiencing</span></div>
+          <div class="step"><div class="step-num">3</div><span>Click <strong>Analyze</strong> to get your diagnosis</span></div>
+        </div>
       </div>
 
-      <!-- Result Card -->
+      <!-- Diagnosis Result Card -->
       <div class="card result-card" id="resultCard">
-        <div class="card-header">
+
+        <!-- Header -->
+        <div class="card-header" style="margin-bottom:14px;">
           <div>
             <div class="card-title">Diagnosis Result</div>
-            <div class="card-subtitle">Powered by Naive Bayes Model</div>
+            <div class="card-subtitle">Naive Bayes Classifier · AI-Assisted Analysis</div>
           </div>
-          <span style="font-size:20px;">🔬</span>
-        </div>
-
-        <div class="diagnosis-header">
-          <div class="diagnosis-icon">🤒</div>
-          <div>
-            <div class="diagnosis-name" id="resultDisease">—</div>
-            <div class="diagnosis-sub">Primary prediction</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="crit-badge" id="critBadge" style="display:none;"></div>
+            <span style="font-size:26px;" id="diseaseIconEl">🔬</span>
           </div>
         </div>
 
-        <div class="gauge-wrap">
-          <div class="gauge-label">
-            <span style="font-size:12.5px; font-weight:600;">Confidence Score</span>
-            <span style="font-size:13px; font-weight:700; color:var(--blue);" id="confidenceVal">—</span>
+        <!-- Disease name block -->
+        <div class="diagnosis-name-block">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--blue);margin-bottom:4px;">Primary Diagnosis</div>
+          <div class="diagnosis-name" id="resultDisease">—</div>
+          <div id="critBar" style="display:none;margin-top:8px;font-size:12.5px;line-height:1.55;opacity:.85;color:var(--text-muted);"></div>
+        </div>
+
+        <!-- ════ SEMI-CIRCULAR GAUGE ════ -->
+        <div class="gauge-container">
+          <svg class="gauge-svg" viewBox="0 0 200 120">
+            <!-- Zone color bands (background arcs) -->
+            <!-- Grey zone: 0–40% = ~0° to 72° of the 180° arc -->
+            <path d="M 20 100 A 80 80 0 0 1 72.4 28.1"
+                  fill="none" stroke="#CBD5E1" stroke-width="14" stroke-linecap="butt" opacity="0.4"/>
+            <!-- Amber zone: 41–75% -->
+            <path d="M 72.4 28.1 A 80 80 0 0 1 145 21"
+                  fill="none" stroke="#FCD34D" stroke-width="14" stroke-linecap="butt" opacity="0.4"/>
+            <!-- Green zone: 76–100% -->
+            <path d="M 145 21 A 80 80 0 0 1 180 100"
+                  fill="none" stroke="#86EFAC" stroke-width="14" stroke-linecap="butt" opacity="0.4"/>
+            <!-- Track outline -->
+            <path id="gaugeTrack" d="M 20 100 A 80 80 0 0 1 180 100"
+                  fill="none" stroke="#E2E8F0" stroke-width="14" stroke-linecap="round" opacity="0.6"/>
+            <!-- Active arc -->
+            <path id="gaugeArc" d="M 20 100 A 80 80 0 0 1 180 100"
+                  fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round"
+                  stroke-dasharray="251.2" stroke-dashoffset="251.2"
+                  style="transition: stroke-dashoffset 1.2s cubic-bezier(.22,1,.36,1);"/>
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#475569"/>
+                <stop offset="45%" stop-color="#F59E0B"/>
+                <stop offset="80%" stop-color="#12B76A"/>
+              </linearGradient>
+            </defs>
+            <!-- Center value -->
+            <text id="gaugePctText" x="100" y="90" text-anchor="middle" font-family="Sora,sans-serif"
+                  font-size="28" font-weight="700" fill="#0D1B2A">—</text>
+            <text x="100" y="108" text-anchor="middle" font-family="DM Sans,sans-serif"
+                  font-size="10" fill="#6B7A8D" font-weight="600">CONFIDENCE</text>
+            <!-- Needle indicator -->
+            <circle id="gaugeNeedle" cx="20" cy="100" r="6" fill="#0062E6" stroke="white" stroke-width="2"
+                    style="transition: cx 1.2s cubic-bezier(.22,1,.36,1), cy 1.2s cubic-bezier(.22,1,.36,1);"/>
+          </svg>
+
+          <!-- Medical Certainty Scale -->
+          <div class="certainty-scale">
+            <div class="certainty-zone zone-low" id="zone-low">🔘 Insufficient Data</div>
+            <div class="certainty-zone zone-medium" id="zone-medium">⚠️ Possible Match</div>
+            <div class="certainty-zone zone-high" id="zone-high">✅ Strong Correlation</div>
           </div>
-          <div class="gauge-bar">
-            <div class="gauge-fill" id="gaugeFill" style="background: linear-gradient(90deg,#0062E6,#12B76A);"></div>
+          <div class="certainty-label" id="certaintyLabel">—</div>
+        </div>
+
+        <!-- Top 3 differential diagnoses -->
+        <div class="section-label">📊 Top 3 Differential Diagnoses</div>
+        <div class="prob-row-grid" id="probList"></div>
+
+        <!-- Care guide -->
+        <div class="care-divider">
+          <span>🩹 Care Guide — <span id="careDiseaseName">—</span></span>
+        </div>
+
+        <div class="dos-donts-grid">
+          <div class="dos-col">
+            <div class="care-col-header dos-header">
+              <span>✅</span> Do's
+            </div>
+            <ul class="care-list" id="dosList"></ul>
+          </div>
+          <div class="donts-col">
+            <div class="care-col-header donts-header">
+              <span>🚫</span> Don'ts
+            </div>
+            <ul class="care-list" id="dontsList"></ul>
           </div>
         </div>
 
-        <div style="font-size:12.5px; font-weight:600; margin-bottom:10px; color:var(--text-muted);">TOP 3 PREDICTIONS</div>
-        <div class="prob-list" id="probList"></div>
+        <!-- Home Remedies -->
+        <div style="margin-bottom:16px;">
+          <div class="section-label" style="margin-bottom:10px;">🌿 Home Remedies & Self-Care</div>
+          <div class="remedies-flex" id="remediesList"></div>
+        </div>
 
+        <!-- Suggestion chips -->
         <div class="suggestions" id="suggestionChips"></div>
 
-        <!-- FIX #4 / #13 — Buttons no longer use inline onclick with string interpolation.
-             Download Report uses a real <a> tag whose href is set by JS after diagnosis. -->
-        <div class="quick-actions">
-          <a id="downloadReportBtn" href="#" class="qa-btn" style="pointer-events:none; opacity:0.5;">📄 Download Report</a>
+        <!-- Quick actions -->
+        <div class="quick-actions" style="margin-top:10px;">
+          <a id="downloadReportBtn" href="#" class="qa-btn" style="pointer-events:none;opacity:0.5;">📄 Download Report</a>
           <button class="qa-btn" onclick="window.location.href='/hospitals'">🏥 Nearby Hospitals</button>
           <button class="qa-btn" onclick="window.location.href='/consultation'">📅 Book Consultation</button>
           <button class="qa-btn" onclick="resetAnalysis()">🔄 New Analysis</button>
         </div>
 
-        <div class="disclaimer">
-          ⚠️ <span>This is an AI prediction based on statistical patterns and is <strong>not</strong> a substitute for professional medical advice. Always consult a qualified doctor.</span>
+        <div class="disclaimer" style="margin-top:14px;">
+          ⚕️ <span>AI prediction only — <strong>not</strong> a substitute for professional medical diagnosis. Always consult a qualified doctor.</span>
         </div>
       </div>
 
     </div>
 
-    <!-- RIGHT COLUMN — AI Chat -->
+    <!-- ══════════════════════════════════
+         RIGHT PANEL — AI Chat
+    ══════════════════════════════════ -->
     <div class="chat-panel">
       <div class="chat-box">
         <div class="chat-header">
@@ -495,35 +1008,55 @@ nav a.active { background: var(--blue-pale); color: var(--blue); }
 
 <script>
 /* ══════════════════════════════════════════════════════════════
-   FIX #1 — Read ALL Flask data from the JSON block.
-   No Jinja2 curly-brace expressions inside this <script> tag — zero VS Code errors.
-   ══════════════════════════════════════════════════════════════ */
+   FLASK DATA
+══════════════════════════════════════════════════════════════ */
 const _fd          = JSON.parse(document.getElementById('flask-data').textContent);
-const ALL_SYMPTOMS = _fd.symptoms;     // exact CSV column order — model trained on this
+const ALL_SYMPTOMS = _fd.symptoms;
 const uname        = _fd.username;
 let   diagnosisCount = _fd.diag_count;
 const diseaseCount   = _fd.disease_count;
 const symCount       = _fd.sym_count;
+const CATEGORY_MAP   = _fd.category_map;
 
-/* Populate stat cards dynamically from real CSV data */
 document.getElementById('diseaseCount').textContent  = diseaseCount;
 document.getElementById('symCount').textContent      = symCount;
 document.getElementById('diagCount').textContent     = diagnosisCount;
 document.getElementById('totalSymCount').textContent = symCount;
-
-/* FIX #10 — Avatar initial from JS-read username (HTML already has the name) */
 document.getElementById('avatarInitial').textContent = uname[0]?.toUpperCase() || 'U';
 
-/* ── CATEGORY MAP ── */
-// CATEGORY_MAP is now auto-built server-side from actual CSV column names
-// so it always matches your dataset regardless of symptom naming
-const CATEGORY_MAP = _fd.category_map;
+/* ══════════════════════════════════════════════════════════════
+   BODY MAP — Region → Category mapping
+══════════════════════════════════════════════════════════════ */
+const REGION_TO_CAT = {
+  head:        'neuro',
+  respiratory: 'respiratory',
+  digestive:   'digestive',
+  skin:        'skin',
+  general:     'general',
+  all:         'all'
+};
 
 let selectedSymptoms = new Set();
 let currentFilter    = 'all';
 let lastRecordId     = null;
 
-/* ── CHAT ── */
+function selectRegion(region, svgEl) {
+  // Remove active from all regions and legends
+  document.querySelectorAll('.body-region').forEach(r => r.classList.remove('active'));
+  document.querySelectorAll('.legend-item').forEach(l => l.classList.remove('active'));
+
+  if (svgEl) svgEl.classList.add('active');
+  const legendEl = document.getElementById('legend-' + region);
+  if (legendEl) legendEl.classList.add('active');
+
+  currentFilter = REGION_TO_CAT[region] || 'all';
+  onSearch(document.getElementById('symptomSearch').value);
+  showDropdown();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CHAT
+══════════════════════════════════════════════════════════════ */
 const chatMessages = document.getElementById('chatMessages');
 
 function addMessage(role, html) {
@@ -535,87 +1068,58 @@ function addMessage(role, html) {
   chatMessages.appendChild(div);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
-
 function addTypingIndicator() {
   const div = document.createElement('div');
-  div.id = 'typingMsg';
-  div.className = 'msg ai';
+  div.id = 'typingMsg'; div.className = 'msg ai';
   div.innerHTML = `<div class="msg-avatar">🤖</div>
     <div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
   chatMessages.appendChild(div);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 }
-
-function removeTypingIndicator() {
-  document.getElementById('typingMsg')?.remove();
-}
+function removeTypingIndicator() { document.getElementById('typingMsg')?.remove(); }
 
 addMessage('ai', `Hello! I'm <strong>Dr. Aiden</strong>, your AI health assistant. 👋<br><br>
-  Select your symptoms on the left and I'll analyze them using the Naive Bayes model.`);
+  Use the <strong>body map</strong> on the left to tap your affected area, then select symptoms from the dropdown. I'll analyze them using our Naive Bayes model.`);
 
-/* ── SEARCH & FILTER ── */
+/* ══════════════════════════════════════════════════════════════
+   SEARCH & FILTER
+══════════════════════════════════════════════════════════════ */
 function getFilteredSymptoms(query) {
   let pool = currentFilter === 'all'
     ? ALL_SYMPTOMS
     : (CATEGORY_MAP[currentFilter] || ALL_SYMPTOMS).filter(s => ALL_SYMPTOMS.includes(s));
   if (query) pool = pool.filter(s => s.toLowerCase().includes(query.toLowerCase()));
-  // Return ALL matching symptoms (no artificial cap) — search filters naturally
   return [...new Set(pool)].filter(s => !selectedSymptoms.has(s));
 }
 
 function onSearch(val) {
   const dropdown = document.getElementById('symptomDropdown');
   const items    = getFilteredSymptoms(val);
-
   if (!items.length) {
     dropdown.innerHTML = val
       ? `<div class="dropdown-item" style="color:var(--text-muted);">No symptoms match "<strong>${val}</strong>"</div>`
       : '<div class="dropdown-item" style="color:var(--text-muted);">All symptoms already selected</div>';
   } else {
-    // Show count header when browsing (no query) so user knows how many exist
-    const header = !val
-      ? `<div style="padding:6px 16px 4px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;">
-           ${items.length} symptom${items.length !== 1 ? 's' : ''} available
-         </div>`
-      : `<div style="padding:6px 16px 4px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;">
-           ${items.length} match${items.length !== 1 ? 'es' : ''} for "${val}"
-         </div>`;
+    const header = `<div style="padding:6px 14px 4px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">
+      ${items.length} symptom${items.length !== 1 ? 's' : ''} ${val ? 'match' : 'available'}</div>`;
     dropdown.innerHTML = header + items.map(s =>
-        `<div class="dropdown-item" data-sym="${s}" onmousedown="handleAdd(event)">
-           🔹 ${s.replace(/_/g,' ')}
-         </div>`
-      ).join('');
+      `<div class="dropdown-item" data-sym="${s}" onmousedown="handleAdd(event)">🔹 ${s.replace(/_/g,' ')}</div>`
+    ).join('');
   }
   dropdown.classList.add('open');
 }
 
-/* FIX #11 — Safe symptom add via data attribute (no string interpolation in onclick) */
 function handleAdd(event) {
   const sym = event.currentTarget.dataset.sym;
   if (sym) addSymptom(sym);
 }
-
 function showDropdown() {
   onSearch(document.getElementById('symptomSearch').value);
-  // Update hint while dropdown is open
-  const hint = document.getElementById('symHint');
-  if (hint) hint.style.display = 'none';
-}
-
-function onDropdownClose() {
-  const hint = document.getElementById('symHint');
-  if (hint) hint.style.display = '';
+  document.getElementById('symHint').style.display = 'none';
 }
 function hideDropdown() {
   document.getElementById('symptomDropdown').classList.remove('open');
-  onDropdownClose();
-}
-
-function filterCat(el, cat) {
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  currentFilter = cat;
-  onSearch(document.getElementById('symptomSearch').value);
+  document.getElementById('symHint').style.display = '';
 }
 
 function addSymptom(sym) {
@@ -626,19 +1130,15 @@ function addSymptom(sym) {
   hideDropdown();
   updateAnalyzeBtn();
 
-  /* FIX #12 — Capture symptom count NOW (synchronous), not inside delayed callback */
   const sizeNow = selectedSymptoms.size;
   if (sizeNow <= 3) {
     const msgs = [
       `Got it — noted <strong>${sym.replace(/_/g,' ')}</strong>. Any other symptoms?`,
       `I see you're also experiencing <strong>${sym.replace(/_/g,' ')}</strong>. That helps narrow things down.`,
-      `<strong>${sym.replace(/_/g,' ')}</strong> added. We have enough to run an analysis — or keep adding for better accuracy.`
+      `<strong>${sym.replace(/_/g,' ')}</strong> added. You can analyze now or keep adding for better accuracy.`
     ];
     addTypingIndicator();
-    setTimeout(() => {
-      removeTypingIndicator();
-      addMessage('ai', msgs[sizeNow - 1]); // use captured value, not live .size
-    }, 700);
+    setTimeout(() => { removeTypingIndicator(); addMessage('ai', msgs[sizeNow - 1]); }, 700);
   }
 }
 
@@ -651,29 +1151,83 @@ function removeSymptom(sym) {
 function renderTags() {
   const cloud = document.getElementById('tagCloud');
   document.getElementById('selCount').textContent = `${selectedSymptoms.size} selected`;
-
   if (!selectedSymptoms.size) {
-    cloud.innerHTML = '<span style="color:var(--text-muted); font-size:13px; align-self:center;">Selected symptoms appear here…</span>';
+    cloud.innerHTML = '<span style="color:var(--text-muted);font-size:12.5px;align-self:center;">No symptoms selected yet</span>';
     return;
   }
-
-  /* FIX #13 — Remove buttons use data-sym attribute instead of inline string onclick */
   cloud.innerHTML = [...selectedSymptoms].map(s =>
-    `<div class="tag">
-       ${s.replace(/_/g,' ')}
-       <button class="tag-remove" data-sym="${s}" onclick="removeSymptom(this.dataset.sym)">×</button>
-     </div>`
+    `<div class="tag">${s.replace(/_/g,' ')}
+      <button class="tag-remove" data-sym="${s}" onclick="removeSymptom(this.dataset.sym)">×</button>
+    </div>`
   ).join('');
 }
 
 function updateAnalyzeBtn() {
-  document.getElementById('analyzeBtn').disabled = selectedSymptoms.size === 0;
+  const btn  = document.getElementById('analyzeBtn');
+  const hint = document.getElementById('analyzeHint');
+  const has  = selectedSymptoms.size > 0;
+  const many = selectedSymptoms.size >= 3;
+  btn.disabled = !has;
+
+  if (!has) {
+    btn.classList.remove('ready');
+    hint.textContent = 'Add at least 1 symptom to begin';
+    hint.style.color = 'var(--text-muted)';
+  } else if (!many) {
+    btn.classList.remove('ready');
+    hint.textContent = `${selectedSymptoms.size} symptom${selectedSymptoms.size>1?'s':''} selected — add more for better accuracy`;
+    hint.style.color = 'var(--amber)';
+  } else {
+    btn.classList.add('ready');
+    hint.textContent = `✅ ${selectedSymptoms.size} symptoms ready — click Analyze!`;
+    hint.style.color = 'var(--green)';
+  }
 }
 
-/* ── ANALYSIS ── */
+/* ══════════════════════════════════════════════════════════════
+   SEMI-CIRCULAR GAUGE
+══════════════════════════════════════════════════════════════ */
+function updateGauge(pct) {
+  // Arc: M 20 100 A 80 80 0 0 1 180 100 = 180° semicircle
+  // Path length of a 180° arc with r=80: π*80 ≈ 251.2
+  const totalLength = 251.2;
+  const offset = totalLength - (pct / 100) * totalLength;
+  document.getElementById('gaugeArc').style.strokeDashoffset = offset;
+  document.getElementById('gaugePctText').textContent = pct + '%';
+
+  // Needle position: angle goes from 180° (left) to 0° (right)
+  const angle = Math.PI - (pct / 100) * Math.PI; // in radians
+  const cx = 100 + 80 * Math.cos(angle);
+  const cy = 100 - 80 * Math.sin(angle);
+  document.getElementById('gaugeNeedle').setAttribute('cx', cx.toFixed(1));
+  document.getElementById('gaugeNeedle').setAttribute('cy', cy.toFixed(1));
+
+  // Certainty zones
+  document.getElementById('zone-low').classList.remove('active');
+  document.getElementById('zone-medium').classList.remove('active');
+  document.getElementById('zone-high').classList.remove('active');
+
+  let label = '';
+  if (pct <= 40) {
+    document.getElementById('zone-low').classList.add('active');
+    label = 'Insufficient data — please add more symptoms for a reliable result.';
+  } else if (pct <= 75) {
+    document.getElementById('zone-medium').classList.add('active');
+    label = 'Possible match detected — consult a professional to confirm.';
+  } else {
+    document.getElementById('zone-high').classList.add('active');
+    label = 'Strong correlation found — recommended action required.';
+  }
+  document.getElementById('certaintyLabel').textContent = label;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ANALYSIS
+══════════════════════════════════════════════════════════════ */
 async function runAnalysis() {
   const btn = document.getElementById('analyzeBtn');
   btn.disabled = true;
+  btn.classList.remove('ready');
   document.getElementById('btnText').textContent = 'Analyzing…';
   document.getElementById('btnIcon').className   = 'pulsing';
   document.getElementById('btnIcon').textContent = '⏳';
@@ -682,7 +1236,6 @@ async function runAnalysis() {
   addMessage('user', `Symptoms: ${symsText}`);
   addTypingIndicator();
 
-  /* Build exact payload — ALL_SYMPTOMS is the authoritative column list from the CSV */
   const payload = {};
   ALL_SYMPTOMS.forEach(s => { payload[s] = selectedSymptoms.has(s) ? 1 : 0; });
 
@@ -692,22 +1245,18 @@ async function runAnalysis() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-
-    /* FIX #14 — Check Content-Type before calling .json() so HTML error pages
-       don't throw "SyntaxError: Unexpected token < in JSON" */
     const contentType = response.headers.get('Content-Type') || '';
     if (!response.ok || !contentType.includes('application/json')) {
       const text = await response.text();
       throw new Error(`Server returned ${response.status}: ${text.substring(0, 120)}`);
     }
-
     const data = await response.json();
     setTimeout(() => { removeTypingIndicator(); showResult(data); }, 1000);
-
   } catch (err) {
     removeTypingIndicator();
     addMessage('ai', `⚠️ <strong>Error:</strong> ${err.message}<br>Make sure Flask is running on port 5001.`);
     btn.disabled = false;
+    updateAnalyzeBtn();
     document.getElementById('btnText').textContent = 'Analyze Symptoms';
     document.getElementById('btnIcon').textContent = '⚡';
     document.getElementById('btnIcon').className   = '';
@@ -718,49 +1267,67 @@ function showResult(data) {
   const [top, ...rest] = data;
   const topPct = parseFloat(top.probability);
 
-  document.getElementById('resultDisease').textContent  = top.disease;
-  document.getElementById('confidenceVal').textContent  = top.probability;
+  document.getElementById('emptyState').style.display  = 'none';
+  document.getElementById('resultDisease').textContent = top.disease;
   document.getElementById('resultCard').classList.add('visible');
-  setTimeout(() => { document.getElementById('gaugeFill').style.width = topPct + '%'; }, 100);
 
-  const colors = ['#0062E6','#12B76A','#F59E0B'];
-  document.getElementById('probList').innerHTML = data.map((item, i) =>
-    `<div class="prob-item">
-       <div class="prob-meta">
-         <span class="prob-disease">${item.disease}</span>
-         <span class="prob-pct">${item.probability}</span>
-       </div>
-       <div class="prob-bar">
-         <div class="prob-fill" id="pf${i}" style="background:${colors[i]};width:0%"></div>
-       </div>
-     </div>`
-  ).join('');
+  // Gauge
+  setTimeout(() => updateGauge(topPct), 100);
+
+  // Red flag banner
+  renderCareGuide(top.disease);
+  const care = DISEASE_CARE[top.disease];
+  if (care && (care.criticality.level === 'high' || care.criticality.level === 'critical')) {
+    const banner = document.getElementById('redFlagBanner');
+    document.getElementById('redFlagText').textContent =
+      `⚠️ ${care.criticality.label} — ${care.criticality.desc.split('.')[0]}.`;
+    banner.classList.add('visible');
+    // Auto-scroll banner into view
+    banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    document.getElementById('redFlagBanner').classList.remove('visible');
+  }
+
+  // Prob cards
+  const cardColors = ['#0062E6', '#12B76A', '#F59E0B'];
+  const ranks      = ['1st', '2nd', '3rd'];
+  document.getElementById('probList').innerHTML = data.map((item, i) => {
+    const pct = parseFloat(item.probability);
+    return `
+      <div class="prob-card">
+        <div class="prob-card-rank">${ranks[i]} Choice</div>
+        <div class="prob-card-name">${item.disease}</div>
+        <div class="prob-card-pct" style="color:${cardColors[i]}">${item.probability}</div>
+        <div class="prob-card-bar" id="pcbar${i}" style="background:${cardColors[i]};width:0%;"></div>
+      </div>`;
+  }).join('');
   setTimeout(() => data.forEach((item, i) => {
-    document.getElementById('pf' + i).style.width = parseFloat(item.probability) + '%';
+    const el = document.getElementById('pcbar' + i);
+    if (el) el.style.width = parseFloat(item.probability) + '%';
   }), 150);
 
+  // Suggestion chips
   const sev = topPct > 60 ? 'warn' : 'info';
   document.getElementById('suggestionChips').innerHTML = `
-    <div class="suggestion ${sev}">⚕️ See a Specialist</div>
-    <div class="suggestion info">💊 Check Medication</div>
-    <div class="suggestion info">🌡️ Monitor Symptoms</div>`;
+    <div class="suggestion ${sev}">⚕️ Consult a Specialist</div>
+    <div class="suggestion info">💊 Review Medications</div>
+    <div class="suggestion info">📋 Monitor Symptoms</div>`;
 
   diagnosisCount++;
   document.getElementById('diagCount').textContent = diagnosisCount;
 
-  document.getElementById('analyzeBtn').disabled  = false;
-  document.getElementById('btnText').textContent  = 'Analyze Symptoms';
-  document.getElementById('btnIcon').textContent  = '⚡';
-  document.getElementById('btnIcon').className    = '';
+  document.getElementById('btnText').textContent = 'Analyze Symptoms';
+  document.getElementById('btnIcon').textContent = '⚡';
+  document.getElementById('btnIcon').className   = '';
+  updateAnalyzeBtn();
 
   addMessage('ai',
     `Based on your symptoms, my analysis suggests <strong>${top.disease}</strong> ` +
     `with a confidence of <strong>${top.probability}</strong>.<br><br>` +
-    (rest.length ? `I also detected possibilities of <strong>${rest.map(r => r.disease).join('</strong> and <strong>')}</strong>.<br><br>` : '') +
-    `⚠️ Please consult a qualified physician to confirm this diagnosis.`
+    (rest.length ? `Differential diagnoses include <strong>${rest.map(r => r.disease).join('</strong> and <strong>')}</strong>.<br><br>` : '') +
+    `The <strong>Care Guide</strong> shows personalised Do's &amp; Don'ts. ⚠️ Always confirm with a physician.`
   );
 
-  /* Enable Download Report button with the real record ID */
   fetch('/api/history')
     .then(r => r.json())
     .then(hist => {
@@ -771,10 +1338,153 @@ function showResult(data) {
         dlBtn.style.pointerEvents = 'auto';
         dlBtn.style.opacity       = '1';
       }
-    })
-    .catch(() => {});
+    }).catch(() => {});
+}
 
-  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+/* ══════════════════════════════════════════════════════════════
+   DISEASE CARE DATABASE
+══════════════════════════════════════════════════════════════ */
+const DISEASE_CARE = {
+  "Hypertension": {
+    icon:"🫀",
+    criticality:{level:"high",label:"High Risk — Requires Management",desc:"Uncontrolled hypertension can lead to stroke, heart attack or kidney failure. Consistent monitoring and medication adherence are essential."},
+    dos:[{ci:"🥗",text:"Follow a low-sodium, DASH diet with fruits and vegetables"},{ci:"🚶",text:"Exercise moderately for at least 30 minutes daily"},{ci:"💊",text:"Take prescribed antihypertensive medications as directed"},{ci:"📊",text:"Monitor blood pressure at home twice daily"},{ci:"😴",text:"Maintain 7–8 hours of quality sleep each night"},{ci:"🧘",text:"Practice stress-reducing techniques like meditation"}],
+    donts:[{ci:"🧂",text:"Avoid high-sodium foods — pickles, chips, processed meals"},{ci:"🚬",text:"Do not smoke — it raises blood pressure significantly"},{ci:"🍺",text:"Limit or eliminate alcohol consumption"},{ci:"☕",text:"Avoid excess caffeine, especially in the morning"},{ci:"⚠️",text:"Never skip medication doses without consulting your doctor"}],
+    remedies:["🍌 Banana & potassium-rich foods","🧄 1 clove garlic daily (raw)","🫚 Flaxseed in meals","🍵 Hibiscus tea (unsweetened)","🚶 Brisk 30-min evening walk"],
+  },
+  "Hepatitis B": {
+    icon:"🫁",
+    criticality:{level:"critical",label:"Critical — Seek Medical Care Urgently",desc:"Hepatitis B is a serious liver infection. Chronic infection can cause cirrhosis or liver cancer. Antiviral therapy and regular monitoring are mandatory."},
+    dos:[{ci:"💊",text:"Take antiviral medication exactly as prescribed"},{ci:"🩺",text:"Attend all scheduled liver function and viral load tests"},{ci:"💉",text:"Ensure close contacts are vaccinated against Hepatitis B"},{ci:"🥗",text:"Eat a liver-friendly diet — fruits, vegetables, whole grains"},{ci:"💧",text:"Stay well hydrated with clean, filtered water"},{ci:"😴",text:"Rest adequately to support liver regeneration"}],
+    donts:[{ci:"🍺",text:"Do not consume any alcohol — even small amounts damage the liver"},{ci:"💊",text:"Avoid paracetamol and NSAIDs without doctor's approval"},{ci:"🍔",text:"Avoid fatty, fried, and processed foods"},{ci:"🩸",text:"Do not share needles, razors, or personal hygiene items"},{ci:"🚫",text:"Do not stop antiviral medications prematurely"}],
+    remedies:["🫚 Milk thistle supplement (with doctor's advice)","🥦 Cruciferous vegetables","🍵 Green tea (antioxidant support)","🥕 Carrot and beetroot juice","😴 Adequate rest — 8+ hours"],
+  },
+  "Migraine": {
+    icon:"🧠",
+    criticality:{level:"medium",label:"Moderate — Manage Triggers",desc:"Migraines are recurring neurological headaches that can be debilitating. Identifying and avoiding triggers significantly reduces frequency and severity."},
+    dos:[{ci:"🌑",text:"Rest in a quiet, dark room during an episode"},{ci:"💧",text:"Maintain adequate hydration — drink 8–10 glasses of water daily"},{ci:"🕐",text:"Maintain consistent sleep and meal schedules"},{ci:"📓",text:"Keep a migraine diary to identify personal triggers"},{ci:"💊",text:"Take prescribed triptans or analgesics at onset of aura"},{ci:"🧊",text:"Apply a cold compress to the forehead and neck"}],
+    donts:[{ci:"☀️",text:"Avoid bright lights, flashing screens during an episode"},{ci:"🔊",text:"Avoid loud noise and strong smells (perfumes, chemicals)"},{ci:"🍫",text:"Limit chocolate, aged cheese, red wine — common triggers"},{ci:"😴",text:"Avoid irregular sleep — oversleeping can also trigger attacks"},{ci:"💊",text:"Do not overuse pain relief — leads to rebound headaches"}],
+    remedies:["🧊 Cold pack on forehead","💆 Gentle temple massage","🫚 Peppermint/lavender oil (topical)","🍵 Ginger tea at onset","🧘 Progressive muscle relaxation"],
+  },
+  "Chikungunya": {
+    icon:"🦟",
+    criticality:{level:"high",label:"High Risk — Requires Rest & Monitoring",desc:"Chikungunya causes severe joint pain that can persist for weeks to months. There is no specific antiviral; management focuses on symptom relief and preventing complications."},
+    dos:[{ci:"🛏️",text:"Get complete bed rest until fever resolves"},{ci:"💧",text:"Drink at least 3 litres of water or ORS daily"},{ci:"💊",text:"Take paracetamol for fever and pain as directed"},{ci:"🧦",text:"Wear full-sleeve clothing to prevent further mosquito bites"},{ci:"🩺",text:"Monitor platelet count and visit doctor if symptoms worsen"},{ci:"🌡️",text:"Check temperature 4 times daily during fever phase"}],
+    donts:[{ci:"💊",text:"Do not take aspirin or ibuprofen — risk of bleeding"},{ci:"🦟",text:"Avoid stagnant water near home — eliminates mosquito breeding"},{ci:"🏃",text:"Avoid all strenuous activity during the acute phase"},{ci:"🍺",text:"Do not consume alcohol — worsens dehydration"},{ci:"🚫",text:"Do not ignore severe joint swelling or rash — seek care"}],
+    remedies:["🌿 Papaya leaf extract (consult doctor)","🍋 Warm lemon-honey water","🌾 Turmeric milk twice daily","💆 Warm compress on joints","💧 Coconut water for electrolytes"],
+  },
+  "Malaria": {
+    icon:"🦠",
+    criticality:{level:"critical",label:"Critical — Begin Treatment Immediately",desc:"Malaria is a life-threatening parasitic infection. Prompt diagnosis and antimalarial treatment are critical — delayed treatment can cause cerebral malaria or death."},
+    dos:[{ci:"💊",text:"Start prescribed antimalarial drugs (e.g. Artemisinin) immediately"},{ci:"🩺",text:"Confirm diagnosis with a blood smear or RDT test"},{ci:"💧",text:"Maintain hydration — drink ORS or coconut water frequently"},{ci:"🌡️",text:"Monitor temperature regularly and manage fever with paracetamol"},{ci:"🦟",text:"Use insecticide-treated bed nets every night"},{ci:"🏥",text:"Hospitalise immediately if confusion, seizures, or jaundice appear"}],
+    donts:[{ci:"🚫",text:"Do not delay treatment — every hour matters with severe malaria"},{ci:"💊",text:"Do not self-medicate with incomplete or wrong drug combinations"},{ci:"🍺",text:"Avoid alcohol — impairs recovery and worsens liver stress"},{ci:"🏃",text:"No physical exertion during the fever and chills phase"},{ci:"🦟",text:"Do not leave skin exposed at dusk and dawn (peak mosquito hours)"}],
+    remedies:["🌿 Artemisia tea (traditional; not a substitute for drugs)","🥭 Papaya leaf juice for platelet support","🫚 Neem extract (antipyretic)","💧 ORS for dehydration","🧄 Garlic with warm water"],
+  },
+  "COVID-19": {
+    icon:"🦠",
+    criticality:{level:"high",label:"High Risk — Isolate & Monitor Oxygen",desc:"COVID-19 ranges from mild to life-threatening. Monitor SpO₂ closely — oxygen below 94% requires emergency medical attention. Isolate to prevent spread."},
+    dos:[{ci:"🏠",text:"Isolate at home for a minimum of 5–7 days after symptom onset"},{ci:"📟",text:"Monitor blood oxygen (SpO₂) with a pulse oximeter twice daily"},{ci:"💧",text:"Drink 3–4 litres of warm water and herbal fluids daily"},{ci:"🛏️",text:"Rest in prone position (face down) to improve lung ventilation"},{ci:"💊",text:"Follow doctor's prescribed protocol — antivirals, steroids if needed"},{ci:"😷",text:"Wear N95 mask even at home if others are present"}],
+    donts:[{ci:"🚫",text:"Do not ignore SpO₂ below 94% — go to emergency immediately"},{ci:"🏃",text:"Avoid any exertion — even mild activity can worsen breathlessness"},{ci:"💊",text:"Do not take steroids without a doctor's prescription"},{ci:"🍺",text:"Avoid alcohol — impairs immune response"},{ci:"👥",text:"Do not meet others or visit public places during active infection"}],
+    remedies:["🍵 Kadha (ginger, tulsi, black pepper, cloves)","🍯 Honey and ginger shot","💨 Steam inhalation twice daily","🧘 Breathing exercises (Pranayama)","🌶️ Turmeric golden milk at night"],
+  },
+  "Hepatitis C": {
+    icon:"🫁",
+    criticality:{level:"critical",label:"Critical — Antiviral Treatment Required",desc:"Hepatitis C is a chronic liver infection that can lead to cirrhosis and hepatocellular carcinoma. Modern DAA therapy can achieve >95% cure rates — see a hepatologist promptly."},
+    dos:[{ci:"💊",text:"Begin Direct-Acting Antiviral (DAA) therapy as prescribed"},{ci:"🩺",text:"Attend all follow-up appointments and viral load monitoring"},{ci:"🥗",text:"Eat a liver-protective diet — leafy greens, lean protein, fibre"},{ci:"💉",text:"Screen close contacts for Hepatitis C exposure"},{ci:"💧",text:"Drink 8–10 glasses of clean water daily"},{ci:"😴",text:"Prioritise sleep and avoid fatigue"}],
+    donts:[{ci:"🍺",text:"Absolutely no alcohol — accelerates liver fibrosis"},{ci:"🩸",text:"Do not share needles, razors, or toothbrushes"},{ci:"💊",text:"Avoid hepatotoxic supplements — certain herbal products harm the liver"},{ci:"🍔",text:"Avoid fatty and fried food — increases liver fat"},{ci:"🚫",text:"Do not stop antiviral medications midway — causes resistance"}],
+    remedies:["🌿 Milk thistle (silymarin) — liver protective","🥦 Cruciferous vegetables (broccoli, cabbage)","🍵 Green tea — antioxidant support","🥕 Fresh vegetable juices","😴 8+ hours of quality sleep"],
+  },
+  "Dengue": {
+    icon:"🦟",
+    criticality:{level:"critical",label:"Critical — Monitor Platelets Daily",desc:"Dengue can rapidly progress to dengue haemorrhagic fever with platelet drop causing dangerous bleeding. Daily platelet count monitoring is essential — hospitalise if below 100,000."},
+    dos:[{ci:"🩺",text:"Check platelet count daily during the fever phase"},{ci:"💧",text:"Drink at least 3–4 litres of water, ORS, or coconut water daily"},{ci:"🛏️",text:"Absolute bed rest — do not leave bed during high fever"},{ci:"💊",text:"Take only paracetamol for fever — as directed by your doctor"},{ci:"🦟",text:"Use mosquito nets and repellents to prevent re-infection"},{ci:"🏥",text:"Hospitalise immediately if gums bleed, rash spreads, or vomiting"}],
+    donts:[{ci:"💊",text:"NEVER take aspirin, ibuprofen, or diclofenac — causes haemorrhage"},{ci:"🍺",text:"No alcohol — worsens dehydration and platelet suppression"},{ci:"🏃",text:"No physical activity until platelets recover and fever clears"},{ci:"🦟",text:"Do not allow water stagnation in pots, tyres, or coolers near home"},{ci:"🚫",text:"Do not ignore warning signs — abdominal pain, persistent vomiting"}],
+    remedies:["🥭 Papaya leaf juice — clinically shown to raise platelets","🥥 Coconut water for electrolytes","🌿 Giloy (Tinospora) decoction","🍹 Pomegranate juice for iron","💧 ORS sachets every 2 hours"],
+  },
+  "Arthritis": {
+    icon:"🦴",
+    criticality:{level:"medium",label:"Moderate — Long-term Management",desc:"Arthritis is a chronic inflammatory joint condition. While not immediately life-threatening, unmanaged arthritis leads to progressive joint damage and disability."},
+    dos:[{ci:"🏊",text:"Practice low-impact exercises — swimming, cycling, walking"},{ci:"💊",text:"Take prescribed DMARDs or NSAIDs consistently"},{ci:"🥗",text:"Eat an anti-inflammatory diet rich in omega-3 fatty acids"},{ci:"🌡️",text:"Apply warm or cold compress on affected joints as needed"},{ci:"🩺",text:"Attend physiotherapy sessions regularly"},{ci:"⚖️",text:"Maintain a healthy weight to reduce load on joints"}],
+    donts:[{ci:"🏋️",text:"Avoid high-impact activities — running, jumping, heavy lifting"},{ci:"🍔",text:"Avoid processed foods, red meat, and trans fats — pro-inflammatory"},{ci:"🚬",text:"Do not smoke — worsens inflammation and joint damage"},{ci:"🛋️",text:"Avoid prolonged immobility — gentle movement is beneficial"},{ci:"🍺",text:"Limit alcohol — interacts with arthritis medications"}],
+    remedies:["🌿 Turmeric + black pepper (curcumin)","🫚 Fish oil supplements (omega-3)","🌶️ Capsaicin cream (topical)","💆 Warm Epsom salt soak","🧄 Ginger tea twice daily"],
+  },
+  "Tuberculosis": {
+    icon:"🫁",
+    criticality:{level:"critical",label:"Critical — Complete Full Treatment Course",desc:"TB requires 6–9 months of DOTS therapy. Incomplete treatment causes drug-resistant TB (MDR-TB), which is far harder to treat. Respiratory isolation is necessary to prevent spread."},
+    dos:[{ci:"💊",text:"Take all TB medications daily without missing a single dose"},{ci:"😷",text:"Wear a surgical mask in public and ventilated areas"},{ci:"🪟",text:"Keep your living space well-ventilated with open windows"},{ci:"🥗",text:"Eat a high-protein, high-calorie diet to support recovery"},{ci:"🩺",text:"Attend all sputum follow-up tests to confirm clearance"},{ci:"☀️",text:"Get morning sunlight daily — natural Vitamin D boosts immunity"}],
+    donts:[{ci:"🚫",text:"Never stop medication early — creates drug-resistant TB"},{ci:"🍺",text:"No alcohol — causes dangerous interactions with rifampicin"},{ci:"👥",text:"Avoid close contact with infants, elderly, or immunocompromised people"},{ci:"🚬",text:"Do not smoke — severely damages already compromised lung tissue"},{ci:"💊",text:"Do not take antacids within 2 hours of TB medications"}],
+    remedies:["🥛 High-protein meals — eggs, dal, milk, paneer","🌿 Tulsi and ginger decoction (supportive only)","☀️ 20 min of morning sunlight daily","🧄 Garlic — natural antimicrobial support","😴 9+ hours of rest during intensive phase"],
+  },
+  "Typhoid": {
+    icon:"🌡️",
+    criticality:{level:"high",label:"High Risk — Requires Antibiotic Therapy",desc:"Typhoid is a systemic bacterial infection caused by Salmonella typhi. Without appropriate antibiotics, fever can persist for weeks with risk of intestinal perforation or sepsis."},
+    dos:[{ci:"💊",text:"Take the full prescribed antibiotic course (azithromycin / ceftriaxone)"},{ci:"💧",text:"Drink only boiled or purified water — no raw water at all"},{ci:"🛏️",text:"Complete bed rest until fever resolves for 48+ hours"},{ci:"🍚",text:"Eat soft, easily digestible food — rice, khichdi, boiled vegetables"},{ci:"🌡️",text:"Monitor temperature 4 times daily and manage fever with paracetamol"},{ci:"🩺",text:"Repeat Widal test and blood culture as advised after treatment"}],
+    donts:[{ci:"🥗",text:"Avoid raw salads, street food, and unpeeled fruits"},{ci:"🍔",text:"Avoid high-fibre, spicy, or fried foods — risk of intestinal perforation"},{ci:"🍺",text:"No alcohol during antibiotic treatment"},{ci:"🏃",text:"No strenuous activity — risk of bowel perforation during active phase"},{ci:"🚫",text:"Do not stop antibiotics even if fever reduces — infection persists"}],
+    remedies:["🍵 Ginger and tulsi tea","🥥 Coconut water (rehydration)","🍌 Banana — easy to digest, replenishes potassium","🍚 Plain rice congee or khichdi","🍯 Honey in warm water (antibacterial)"],
+  },
+  "Asthma": {
+    icon:"💨",
+    criticality:{level:"high",label:"High Risk — Keep Rescue Inhaler Accessible",desc:"Asthma attacks can be life-threatening if untreated. Trigger avoidance and a clear action plan are critical. Severe breathlessness requires emergency care."},
+    dos:[{ci:"💨",text:"Carry a reliever inhaler (salbutamol) at all times"},{ci:"📋",text:"Follow your written Asthma Action Plan from your doctor"},{ci:"🏠",text:"Keep home dust-free, mould-free, and well-ventilated"},{ci:"😷",text:"Wear a mask in polluted or dusty environments"},{ci:"💊",text:"Take controller medication (ICS) daily even when feeling well"},{ci:"🧘",text:"Practice pursed-lip and diaphragmatic breathing exercises"}],
+    donts:[{ci:"🚬",text:"Absolutely no smoking — active or passive"},{ci:"🐾",text:"Avoid pet dander if allergic — keep pets out of bedroom"},{ci:"🌸",text:"Avoid strong perfumes, aerosol sprays, and chemical fumes"},{ci:"❄️",text:"Avoid cold air without a scarf or mask covering nose/mouth"},{ci:"💊",text:"Never use beta-blockers — they can precipitate bronchospasm"}],
+    remedies:["💨 Steam inhalation with eucalyptus oil","🍯 Honey and black pepper in warm water","🧄 Ginger tea with tulsi leaves","🌿 Turmeric in warm milk at night","🧘 Pranayama — Anulom-Vilom daily"],
+  },
+  "Influenza": {
+    icon:"🤧",
+    criticality:{level:"medium",label:"Moderate — Rest & Manage Fever",desc:"Seasonal influenza is usually self-limiting in healthy adults (7–10 days), but can be serious in elderly, young children, and immunocompromised patients who may need antivirals."},
+    dos:[{ci:"🛏️",text:"Rest completely — your immune system needs energy to fight the virus"},{ci:"💧",text:"Drink warm fluids — water, soups, herbal teas throughout the day"},{ci:"💊",text:"Take paracetamol for fever and body ache as needed"},{ci:"😷",text:"Wear a mask and maintain respiratory hygiene — cover coughs"},{ci:"🏠",text:"Stay home and avoid contact with others for at least 5 days"},{ci:"💉",text:"Get the annual flu vaccine next season for prevention"}],
+    donts:[{ci:"🏢",text:"Do not go to work or school while symptomatic — spreads infection"},{ci:"💊",text:"Avoid aspirin in children — risk of Reye's syndrome"},{ci:"🍺",text:"No alcohol — suppresses immune response and causes dehydration"},{ci:"🧊",text:"Avoid cold food and drinks — aggravates sore throat"},{ci:"🚫",text:"Do not exert yourself — overexertion can prolong recovery"}],
+    remedies:["🍵 Ginger, tulsi, and honey tea","🥣 Hot chicken or vegetable broth","🧄 Raw garlic in warm water","🌶️ Turmeric milk (golden milk) at bedtime","🍋 Warm lemon water with honey every 3 hours"],
+  },
+  "Diabetes": {
+    icon:"🩸",
+    criticality:{level:"high",label:"High Risk — Lifelong Management Required",desc:"Diabetes is a chronic metabolic condition requiring daily monitoring and medication. Poorly controlled diabetes causes heart disease, blindness, kidney failure, and neuropathy."},
+    dos:[{ci:"📊",text:"Monitor blood glucose before and after meals as prescribed"},{ci:"💊",text:"Take insulin or oral hypoglycaemics at exactly the same time daily"},{ci:"🥗",text:"Follow a low-GI, high-fibre diet — limit refined carbohydrates"},{ci:"🚶",text:"Walk for 30 minutes after every major meal"},{ci:"👟",text:"Inspect feet daily for cuts, blisters, or swelling"},{ci:"🩺",text:"Get HbA1c, kidney function, and eye tests every 3–6 months"}],
+    donts:[{ci:"🍭",text:"Avoid sugary drinks, sweets, white rice, and refined flour products"},{ci:"🍔",text:"Do not eat large portions — split meals into 5–6 small meals"},{ci:"🚬",text:"No smoking — dramatically increases cardiovascular risk in diabetics"},{ci:"🍺",text:"Avoid alcohol — causes dangerous blood sugar fluctuations"},{ci:"🚫",text:"Never skip meals if on insulin — risk of severe hypoglycaemia"}],
+    remedies:["🥬 Bitter gourd (karela) juice in the morning","🌿 Fenugreek seeds soaked overnight","🍵 Cinnamon water (dalchini tea)","🫘 Amla (Indian gooseberry) juice","🚶 Post-meal walks — most effective non-drug glucose reducer"],
+  },
+  "Pneumonia": {
+    icon:"🫁",
+    criticality:{level:"critical",label:"Critical — Hospitalisation May Be Required",desc:"Pneumonia is a serious lung infection causing fluid in air sacs. Severe cases require hospitalisation with IV antibiotics and oxygen. Elderly patients and children are at highest risk."},
+    dos:[{ci:"💊",text:"Complete the full antibiotic course prescribed by your doctor"},{ci:"🛏️",text:"Rest completely — avoid all physical exertion"},{ci:"💧",text:"Drink 2–3 litres of warm fluids daily to thin mucus secretions"},{ci:"🪟",text:"Keep room well-ventilated with fresh air circulation"},{ci:"🌡️",text:"Monitor temperature and SpO₂ levels twice daily"},{ci:"🏥",text:"Seek emergency care if SpO₂ drops below 92% or breathing worsens"}],
+    donts:[{ci:"🚬",text:"No smoking — severely impairs lung recovery and immune response"},{ci:"❄️",text:"Avoid cold air, air conditioning, and drastic temperature changes"},{ci:"🍺",text:"No alcohol — interacts with antibiotics and worsens inflammation"},{ci:"🏃",text:"Do not exercise until fully recovered and cleared by your doctor"},{ci:"🚫",text:"Never self-stop antibiotics — incomplete treatment leads to relapse"}],
+    remedies:["💨 Steam inhalation with eucalyptus oil 3× daily","🍵 Ginger and tulsi decoction with honey","🌶️ Turmeric milk at night","🥣 Warm vegetable or chicken soup","🧘 Deep breathing exercises — sitting upright"],
+  },
+};
+
+const CRIT_META = {
+  low:      { badge:"🟢 Low Risk",      cls:"low" },
+  medium:   { badge:"🟡 Moderate Risk", cls:"medium" },
+  high:     { badge:"🔴 High Risk",     cls:"high" },
+  critical: { badge:"🚨 Critical",      cls:"critical" },
+};
+
+function renderCareGuide(disease) {
+  const care = DISEASE_CARE[disease];
+  if (!care) return;
+
+  const crit = care.criticality;
+  const meta = CRIT_META[crit.level] || CRIT_META.medium;
+
+  document.getElementById('diseaseIconEl').textContent = care.icon;
+
+  const badge = document.getElementById('critBadge');
+  badge.textContent   = meta.badge;
+  badge.className     = 'crit-badge ' + meta.cls;
+  badge.style.display = '';
+
+  const bar = document.getElementById('critBar');
+  bar.textContent   = crit.desc;
+  bar.style.display = 'block';
+
+  document.getElementById('careDiseaseName').textContent = disease;
+
+  document.getElementById('dosList').innerHTML =
+    care.dos.map(item => `<li><span class="ci">${item.ci}</span><span>${item.text}</span></li>`).join('');
+  document.getElementById('dontsList').innerHTML =
+    care.donts.map(item => `<li><span class="ci">${item.ci}</span><span>${item.text}</span></li>`).join('');
+  document.getElementById('remediesList').innerHTML =
+    care.remedies.map(r => `<span class="remedy-pill">${r}</span>`).join('');
 }
 
 function resetAnalysis() {
@@ -782,13 +1492,24 @@ function resetAnalysis() {
   renderTags();
   updateAnalyzeBtn();
   document.getElementById('resultCard').classList.remove('visible');
-  document.getElementById('gaugeFill').style.width = '0%';
-  /* Grey out download button again */
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('redFlagBanner').classList.remove('visible');
+  document.getElementById('critBadge').style.display  = 'none';
+  document.getElementById('critBar').style.display    = 'none';
+  document.getElementById('gaugeArc').style.strokeDashoffset = '251.2';
+  document.getElementById('gaugePctText').textContent = '—';
+  document.getElementById('gaugeNeedle').setAttribute('cx', '20');
+  document.getElementById('gaugeNeedle').setAttribute('cy', '100');
+  ['zone-low','zone-medium','zone-high'].forEach(z => document.getElementById(z).classList.remove('active'));
+  document.getElementById('certaintyLabel').textContent = '—';
+  document.getElementById('dosList').innerHTML         = '';
+  document.getElementById('dontsList').innerHTML       = '';
+  document.getElementById('remediesList').innerHTML    = '';
+  document.getElementById('careDiseaseName').textContent = '—';
+  document.getElementById('diseaseIconEl').textContent   = '🔬';
   const dlBtn = document.getElementById('downloadReportBtn');
-  dlBtn.href  = '#';
-  dlBtn.style.pointerEvents = 'none';
-  dlBtn.style.opacity       = '0.5';
-  addMessage('ai', 'Ready for a new analysis! Select your symptoms to begin.');
+  dlBtn.href = '#'; dlBtn.style.pointerEvents = 'none'; dlBtn.style.opacity = '0.5';
+  addMessage('ai', 'Ready for a new analysis! Select your symptoms from the left panel or body map. 🩺');
 }
 </script>
 </body>

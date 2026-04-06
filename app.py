@@ -5,9 +5,17 @@ Dev:  SQLite  — no setup, just run python app.py
 Prod: Set DATABASE_URL env var to postgres://... — zero code change
 """
 
-import os, datetime, io, uuid
+import os, datetime, io, uuid, json
 from flask import (Flask, render_template, request, jsonify,
                    session, redirect, url_for, send_file, make_response)
+
+try:
+    import anthropic as _anthropic
+    ANTHROPIC_CLIENT = _anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+    AI_CARE_SUPPORT  = True
+except ImportError:
+    ANTHROPIC_CLIENT = None
+    AI_CARE_SUPPORT  = False
 import pandas as pd
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
@@ -423,6 +431,104 @@ def download_report(record_id):
     resp.headers["Content-Type"] = "text/html"
     resp.headers["Content-Disposition"] = f'attachment; filename="report_{record_id}.html"'
     return resp
+
+
+# ══════════════════════════════════════════════════════════════
+#  API — DISEASE CARE TIPS  (Do's, Don'ts, Home Remedies, Criticality)
+# ══════════════════════════════════════════════════════════════
+_care_cache = {}   # Simple in-process cache — avoids redundant API calls
+
+@app.route("/api/disease-care/<path:disease_name>")
+@login_required
+def disease_care(disease_name):
+    """
+    Returns AI-generated Do's, Don'ts, Home Remedies & Criticality
+    for a given disease using the Anthropic Claude API.
+    Falls back to a static stub when the API key is absent.
+    """
+    disease_name = disease_name.strip()
+    cache_key    = disease_name.lower()
+
+    # ── Serve from cache if available ──────────────────────────
+    if cache_key in _care_cache:
+        return jsonify(_care_cache[cache_key])
+
+    # ── Static fallback (no API key) ───────────────────────────
+    if not AI_CARE_SUPPORT or not os.environ.get("ANTHROPIC_API_KEY"):
+        fallback = {
+            "criticality": {
+                "level": "medium",
+                "label": "Moderate Concern",
+                "color": "amber",
+                "description": (
+                    f"{disease_name} requires medical attention. "
+                    "Please consult a qualified physician for proper evaluation."
+                )
+            },
+            "dos": [
+                "Rest and stay hydrated",
+                "Monitor your symptoms closely",
+                "Take prescribed medications on time",
+                "Follow a light, balanced diet",
+                "Consult a doctor if symptoms worsen"
+            ],
+            "donts": [
+                "Do not self-medicate without advice",
+                "Avoid strenuous physical activity",
+                "Do not ignore worsening symptoms",
+                "Avoid junk food and alcohol"
+            ],
+            "home_remedies": [
+                "Drink warm fluids like ginger tea",
+                "Get adequate rest — 8+ hours of sleep",
+                "Use a warm compress for pain relief",
+                "Maintain good hand hygiene"
+            ]
+        }
+        return jsonify(fallback)
+
+    # ── Call Claude API ─────────────────────────────────────────
+    prompt = f"""For the medical condition "{disease_name}", return ONLY a JSON object — no markdown, no explanation, no code fences.
+
+The JSON must follow this exact structure:
+{{
+  "criticality": {{
+    "level": "low | medium | high | critical",
+    "label": "e.g. Mild Concern / Moderate / High Risk / Emergency",
+    "color": "green | amber | orange | red",
+    "description": "2 sentences max: how serious is this condition and when to seek emergency care."
+  }},
+  "dos": [
+    "5–6 concise actionable do's (each under 15 words)"
+  ],
+  "donts": [
+    "4–5 things to strictly avoid (each under 15 words)"
+  ],
+  "home_remedies": [
+    "4–5 safe home remedies or self-care tips (each under 15 words)"
+  ]
+}}
+
+Return only valid JSON. No other text."""
+
+    try:
+        msg  = ANTHROPIC_CLIENT.messages.create(
+            model      = "claude-sonnet-4-20250514",
+            max_tokens = 700,
+            messages   = [{"role": "user", "content": prompt}]
+        )
+        raw  = msg.content[0].text.strip()
+        # Strip accidental markdown fences
+        if raw.startswith("```"):
+            parts = raw.split("```")
+            raw   = parts[1][4:] if parts[1].startswith("json") else parts[1]
+        data = json.loads(raw)
+        _care_cache[cache_key] = data          # Cache the result
+        return jsonify(data)
+
+    except Exception as exc:
+        app.logger.error(f"disease_care API error: {exc}")
+        return jsonify({"error": str(exc)}), 500
 
 
 # ══════════════════════════════════════════════════════════════
