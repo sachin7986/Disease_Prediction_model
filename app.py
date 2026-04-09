@@ -18,8 +18,11 @@ except ImportError:
     AI_CARE_SUPPORT  = False
 import pandas as pd
 import numpy as np
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import BernoulliNB          # FIX: BernoulliNB is correct for binary (0/1) features
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split, cross_val_score   # FIX: proper evaluation
+from sklearn.metrics import accuracy_score, classification_report       # FIX: full metrics
+from werkzeug.security import generate_password_hash, check_password_hash  # FIX: secure passwords
 from functools import wraps
 
 from models import db, User, Diagnosis, Booking
@@ -68,17 +71,64 @@ def format_month(date_str):
 
 # ══════════════════════════════════════════════════════════════
 #  ML MODEL
+#  Fixes applied:
+#   1. GaussianNB → BernoulliNB  (correct for binary 0/1 symptom features)
+#   2. train_test_split           (evaluate on unseen data, not training data)
+#   3. cross_val_score            (robust 5-fold cross-validation)
+#   4. classification_report      (per-disease precision, recall, F1)
 # ══════════════════════════════════════════════════════════════
 csv_path = os.path.join(BASE_DIR, "symp_dataset.csv")
-df = pd.read_csv(csv_path)
-X  = df.drop(columns=["disease"])
-y  = df["disease"]
-le = LabelEncoder()
+df        = pd.read_csv(csv_path)
+X         = df.drop(columns=["disease"])
+y         = df["disease"]
+
+le    = LabelEncoder()
 y_enc = le.fit_transform(y)
-model = GaussianNB()
-model.fit(X, y_enc)
+
 symptoms_list = list(X.columns)
 disease_count = int(len(le.classes_))
+
+# ── FIX 1: Train/Test Split (80% train, 20% test, stratified so every
+#           disease is represented in both splits) ──────────────────────
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y_enc,
+    test_size    = 0.20,
+    random_state = 42,
+    stratify     = y_enc,   # ensures class distribution is preserved
+)
+
+# ── FIX 2: BernoulliNB — correct algorithm for binary symptom features ─
+#   binarize=0.0 means values > 0.0 are treated as "feature present"
+model = BernoulliNB(binarize=0.0)
+model.fit(X_train, y_train)   # train ONLY on training split
+
+# ── FIX 3: Evaluate on HELD-OUT TEST SET (not training data) ───────────
+y_pred_test  = model.predict(X_test)
+test_accuracy = accuracy_score(y_test, y_pred_test) * 100
+
+# ── FIX 4: 5-Fold Cross-Validation on full dataset ─────────────────────
+cv_scores    = cross_val_score(BernoulliNB(binarize=0.0), X, y_enc, cv=5)
+cv_mean      = cv_scores.mean() * 100
+cv_std       = cv_scores.std()  * 100
+
+# ── Retrain on full data after evaluation (maximises prediction quality) ─
+model.fit(X, y_enc)
+
+print("=" * 60)
+print("  MediPredict ML Model — Evaluation Report")
+print("=" * 60)
+print(f"  Algorithm         : BernoulliNB (binarize=0.0)")
+print(f"  Training samples  : {len(X_train)}")
+print(f"  Test samples      : {len(X_test)}")
+print(f"  Test Accuracy     : {test_accuracy:.2f}%")
+print(f"  5-Fold CV Accuracy: {cv_mean:.2f}% ± {cv_std:.2f}%")
+print("-" * 60)
+print(classification_report(
+    y_test, y_pred_test,
+    target_names = le.classes_,
+    zero_division = 0,
+))
+print("=" * 60)
 
 _CATEGORY_KEYWORDS = {
     "general":     ["fever","chill","shiver","malaise","fatigue","sweat","weight","dehydrat","weakness"],
@@ -170,7 +220,7 @@ def login():
         u    = request.form.get("username", "").strip()
         p    = request.form.get("password", "")
         user = User.query.filter_by(username=u).first()
-        if user and user.password == p:   # use check_password_hash in production
+        if user and check_password_hash(user.password, p):   # FIX: secure hash comparison
             session.clear()
             session["user_id"]  = user.id
             session["username"] = user.username
@@ -197,7 +247,7 @@ def signup():
             return render_template("signup.html", error="Username already taken.")
 
         new_user = User(
-            username=u, password=p,
+            username=u, password=generate_password_hash(p),   # FIX: store hash, never plaintext
             first_name=fn, last_name=ln,
             email=em, role=role,
             paid=True if role == "doctor" else False,  # doctors skip payment
@@ -304,8 +354,8 @@ def settings_page():
         elif action == "password":
             old = request.form.get("old_password", "")
             new = request.form.get("new_password", "")
-            if user.password == old:
-                user.password = new
+            if check_password_hash(user.password, old):   # FIX: verify old hash
+                user.password = generate_password_hash(new)  # FIX: store new hash
                 db.session.commit()
                 msg = "Password changed successfully!"
             else:
@@ -583,8 +633,10 @@ def migrate_json():
     if os.path.exists(users_path):
         for username, info in _json.load(open(users_path)).items():
             if not User.query.filter_by(username=username).first():
+                raw_pw = info.get("password","")
                 db.session.add(User(
-                    username=username, password=info.get("password",""),
+                    username=username,
+                    password=generate_password_hash(raw_pw) if raw_pw else generate_password_hash("changeme"),  # FIX: hash migrated passwords
                     email=info.get("email",""), first_name=info.get("first_name",""),
                     last_name=info.get("last_name",""), role=info.get("role","patient"),
                     paid=info.get("paid", True), age=info.get("age",""),
@@ -620,6 +672,26 @@ def migrate_json():
 
     return jsonify({"status":"done","users_migrated":migrated_users,
                     "diagnoses_migrated":migrated_diags})
+
+
+# ══════════════════════════════════════════════════════════════
+#  ONE-TIME MIGRATION: rehash any plaintext passwords in DB
+#  Run ONCE after first deploying the password-hashing fix:
+#    POST http://127.0.0.1:5001/api/rehash-passwords
+#  Safe to run multiple times — already-hashed rows are skipped.
+# ══════════════════════════════════════════════════════════════
+@app.route("/api/rehash-passwords", methods=["POST"])
+def rehash_passwords():
+    rehashed = skipped = 0
+    for user in User.query.all():
+        # werkzeug hashes always begin with "pbkdf2:", "scrypt:", etc.
+        if user.password and not user.password.startswith(("pbkdf2:", "scrypt:", "argon2:")):
+            user.password = generate_password_hash(user.password)
+            rehashed += 1
+        else:
+            skipped += 1
+    db.session.commit()
+    return jsonify({"rehashed": rehashed, "already_hashed_skipped": skipped})
 
 
 # ══════════════════════════════════════════════════════════════
